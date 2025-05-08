@@ -6,37 +6,52 @@
     <meta name="description" content="Ristrutturazioni Morcianesi - Esperienza e Qualità al Tuo Servizio">
     <title>Ristrutturazioni Morcianesi</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}"  type="image/x-icon">
-    
+    <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" type="image/x-icon">
 </head>
 <body>
-    <header>
+    <header class="navbar">
         <img src="{{ url_for('static', filename='images/Logo_RistrutturazioniMorcianesi.png') }}" alt="Logo Ristrutturazioni Morcianesi" class="logo">
-        <h1>Ristrutturazioni Morcianesi</h1>
         <nav>
             <a href="/">Home</a>
-            <a href="/about">Chi Siamo</a>
+            <a href="#chi-siamo">Chi Siamo</a>
             <a href="/services">Servizi</a>
             <a href="/gallery">Galleria</a>
             <a href="/contact">Contatti</a>
         </nav>
+        <div class="hamburger">
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
     </header>
 
-    <section class="hero">
-        <h1>Ristrutturazioni Morcianesi</h1>
-        <p>Da oltre 20 anni miglioriamo la tua casa, con passione e professionalità.</p>
-        <div>
-            <a href="/quote" class="btn">Richiedi un Preventivo</a>
-            <a href="/gallery" class="btn">Guarda i Nostri Lavori</a>
+    <!-- Sezione Chi Siamo con contenuto spostato -->
+    <section class="parallax-section" id="chi-siamo">
+        <div class="parallax-background"></div>
+        <div class="parallax-content">
+            <h2>Ristrutturazioni Morcianesi</h2>
+            <p>Da oltre 20 anni miglioriamo la tua casa, con passione e professionalità.</p>
+            <div>
+                <a href="/quote" class="btn">Richiedi un Preventivo</a>
+                <a href="/gallery" class="btn">Guarda i Nostri Lavori</a>
+            </div>
         </div>
     </section>
-    <section>
-        <h2>Chi Siamo</h2>
-        <p>Shinasi Sejdi, un professionista con oltre 20 anni di esperienza nel settore delle ristrutturazioni edili.</p>
+
+    <section class="extra-content">
+        <h2>Altri Servizi Offerti</h2>
+        <p>Offriamo una vasta gamma di servizi per soddisfare tutte le esigenze dei nostri clienti, tra cui:</p>
+        <ul>
+            <li>Ristrutturazioni complete di interni ed esterni</li>
+            <li>Installazione di pavimenti e rivestimenti</li>
+            <li>Progettazione e realizzazione di cucine e bagni</li>
+            <li>Manutenzione e riparazioni edilizie</li>
+        </ul>
     </section>
 
     <footer>
         <p>&copy; 2025 Ristrutturazioni Morcianesi. Tutti i diritti riservati.</p>
     </footer>
+    <script src="{{ url_for('static', filename='script/scroll_effect.js') }}"></script>
 </body>
 </html>

@@ -51,49 +51,148 @@ header nav a:hover {
     color: #B3E5FC;
 }
 
-/* Hero Section */
-.hero {
-    background: url('/static/images/casavistamareristrutturataconfinestre.png') no-repeat center center/cover;
-    height: 100vh; /* Altezza a schermo intero */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+/* Stile iniziale della barra di navigazione */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to right, #1B9DD1, #156E91);
     color: #fff;
-    padding: 0 1rem;
-    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5); /* Effetto ombra */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem; /* Ridotta rispetto a prima */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transition: all 0.3s ease; /* Transizione fluida */
 }
 
-.hero h1 {
-    font-size: 3.5rem;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+.navbar.shrink {
+    padding: 0.8rem 2rem; /* Riduce il padding */
+    background: linear-gradient(to right, #156E91, #0F5A73); /* Cambia leggermente il colore */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Stile iniziale della barra di navigazione */
+.navbar .logo {
+    width: 180px; /* Aumenta la larghezza del logo */
+    height: auto;
+    transition: width 0.3s ease; /* Transizione fluida per il logo */
+}
+
+.navbar.shrink .logo {
+    width: 120px; /* Riduce la dimensione del logo quando la barra si restringe */
+}
+
+.navbar nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.navbar nav a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+.navbar nav a:hover {
+    color: #B3E5FC;
+}
+
+/* Menu hamburger per dispositivi mobili */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    gap: 5px;
+}
+
+.hamburger div {
+    width: 25px;
+    height: 3px;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+/* Mostra il menu hamburger su schermi piccoli */
+@media (max-width: 768px) {
+    .navbar nav {
+        display: none; /* Nasconde i link */
+    }
+
+    .hamburger {
+        display: flex; /* Mostra il menu hamburger */
+    }
+
+    .navbar.active nav {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: linear-gradient(to right, #1B9DD1, #156E91);
+        padding: 1rem 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar.active nav a {
+        padding: 1rem;
+        text-align: center;
+        font-size: 1.2rem;
+    }
+}
+
+/* Stile iniziale della barra */
+.story-overlay {
+    position: relative;
+    opacity: 0; /* Nasconde la barra inizialmente */
+    transform: translateY(50px); /* Sposta la barra verso il basso */
+    transition: opacity 0.5s ease, transform 0.5s ease; /* Aggiunge una transizione fluida */
+    padding: 4rem 2rem;
+    background: rgba(0, 0, 0, 0.5); /* Sfondo semi-trasparente */
+    color: #fff;
+    text-align: center;
+    z-index: 10;
+}
+
+/* Stile quando la barra è visibile */
+.story-overlay.visible {
+    opacity: 1; /* Rende la barra visibile */
+    transform: translateY(0); /* Riporta la barra nella posizione originale */
+    background: rgba(0, 0, 0, 0.7); /* Rende lo sfondo meno trasparente */
+}
+
+.extra-content {
+    padding: 4rem 2rem;
+    background: #f9f9f9;
+    text-align: center;
+}
+
+.extra-content h2 {
+    font-size: 2rem;
+    color: #1B9DD1;
     margin-bottom: 1rem;
 }
 
-.hero p {
-    font-size: 1.5rem;
-    text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.7);
+.extra-content p {
+    font-size: 1.2rem;
+    color: #555;
     margin-bottom: 2rem;
 }
 
-.hero .btn {
-    background: #1B9DD1;
-    color: #fff;
-    padding: 0.8rem 1.5rem;
-    text-decoration: none;
-    font-size: 1.2rem;
-    border-radius: 5px;
-    transition: background 0.3s ease, transform 0.3s ease;
-    margin: 0.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+.extra-content ul {
+    list-style: none;
+    padding: 0;
 }
 
-.hero .btn:hover {
-    background: #156E91;
-    transform: scale(1.05);
+.extra-content li {
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 0.5rem;
 }
-
 /* Section Styling */
 section {
     padding: 2rem 1rem;
@@ -110,46 +209,6 @@ section p {
     font-size: 1rem;
     color: #555;
     margin-bottom: 1.5rem;
-}
-
-/* Cards for Services */
-.cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-    padding: 2rem;
-}
-
-.card {
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-}
-
-.card img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-}
-
-.card h3 {
-    font-size: 1.5rem;
-    color: #333;
-    margin: 1rem 0;
-}
-
-.card p {
-    padding: 0 1rem;
-    color: #666;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
 }
 
 /* Footer */
@@ -178,4 +237,60 @@ footer p {
     header nav a {
         font-size: 0.9rem;
     }
+}
+
+/* Parallax Section */
+.parallax-section {
+    position: relative;
+    height: 100vh; /* Altezza a schermo intero */
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: #fff;
+}
+
+.parallax-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('/static/images/casavistamareristrutturataconfinestre.png') no-repeat center center/cover;
+    transform: translateY(0); /* Posizione iniziale */
+    z-index: 1;
+    will-change: transform;
+}
+
+.parallax-content {
+    position: relative;
+    z-index: 2;
+    opacity: 0; /* Inizia nascosto */
+    transform: translateY(50px); /* Spostato verso il basso */
+    transition: opacity 0.8s ease, transform 0.8s ease; /* Transizione fluida */
+}
+
+.parallax-section.visible .parallax-content {
+    opacity: 1; /* Rende il contenuto visibile */
+    transform: translateY(0); /* Riporta il contenuto nella posizione originale */
+}
+
+/* Pulsanti */
+.parallax-content .btn {
+    display: inline-block;
+    margin: 1rem;
+    padding: 0.8rem 1.5rem;
+    font-size: 1.2rem;
+    color: #fff;
+    background: #1B9DD1;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.parallax-content .btn:hover {
+    background: #156E91;
+    transform: scale(1.05);
 }
