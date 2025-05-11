@@ -10,13 +10,24 @@
 </head>
 <body>
     <header class="navbar">
-        <img src="{{ url_for('static', filename='images/Logo_RistrutturazioniMorcianesi.png') }}" alt="Logo Ristrutturazioni Morcianesi" class="logo">
+        <a href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='images/Logo_RistrutturazioniMorcianesi.png') }}" alt="Logo Ristrutturazioni Morcianesi" class="logo">
+        </a>
         <nav>
-            <a href="/">Home</a>
-            <a href="#chi-siamo">Chi Siamo</a>
-            <a href="/services">Servizi</a>
-            <a href="/gallery">Galleria</a>
-            <a href="/contact">Contatti</a>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('home') }}#chi-siamo">Chi Siamo</a>
+            <a href="{{ url_for('services') }}">Servizi</a>
+            <a href="{{ url_for('gallery') }}">Galleria</a>
+            <a href="{{ url_for('contact') }}">Contatti</a>
+            
+            {% if logged_in_user %}
+                <span class="nav-username">Benvenuto, {{ logged_in_user.username }}!</span>
+                <a href="{{ url_for('logout') }}" class="nav-auth-link">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="nav-auth-icon-link" title="Accedi o Registrati">
+                    <img src="{{ url_for('static', filename='favicon/personal_area.ico') }}" alt="Area Personale" class="navbar-login-icon">
+                </a>
+            {% endif %}
         </nav>
         <div class="hamburger">
             <div></div>
@@ -25,11 +36,10 @@
         </div>
     </header>
 
-    <!-- Sezione Chi Siamo con contenuto spostato -->
     <section class="parallax-section" id="chi-siamo">
         <div class="parallax-background"></div>
         <div class="parallax-content">
-            <h2>Ristrutturazioni Morcianesi</h2>
+            <h2>RISTRUTTURAZIONI MORCIANESI</h2>
             <p>Da oltre 20 anni miglioriamo la tua casa, con passione e professionalità.</p>
             <div>
                 <a href="/quote" class="btn">Richiedi un Preventivo</a>
@@ -38,16 +48,39 @@
         </div>
     </section>
 
-    <section class="extra-content">
-        <h2>Altri Servizi Offerti</h2>
-        <p>Offriamo una vasta gamma di servizi per soddisfare tutte le esigenze dei nostri clienti, tra cui:</p>
-        <ul>
-            <li>Ristrutturazioni complete di interni ed esterni</li>
-            <li>Installazione di pavimenti e rivestimenti</li>
-            <li>Progettazione e realizzazione di cucine e bagni</li>
-            <li>Manutenzione e riparazioni edilizie</li>
-        </ul>
+    <section class="stage_overlay">
+        <div class="stage">
+            <h2>La Nostra Missione</h2>
+            <p>Offriamo servizi di ristrutturazione e costruzione di alta qualità, garantendo risultati eccellenti e soddisfazione del cliente.</p>
+        </div>
     </section>
+
+    <section class="extra-content">
+    <h2>Altri Servizi Offerti</h2>
+    <p>Offriamo una vasta gamma di servizi per soddisfare tutte le esigenze dei nostri clienti.</p>
+    <div class="services-grid">
+        <div class="service-card">
+            <div class="service-icon">🏠</div>
+            <h3 class="service-title">Ristrutturazioni complete</h3>
+            <p class="service-description">Ristrutturazioni complete di interni ed esterni</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">🔨</div>
+            <h3 class="service-title">Pavimenti e rivestimenti</h3>
+            <p class="service-description">Installazione di pavimenti e rivestimenti</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">🛁</div>
+            <h3 class="service-title">Cucine e bagni</h3>
+            <p class="service-description">Progettazione e realizzazione di cucine e bagni</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon">🔧</div>
+            <h3 class="service-title">Manutenzione</h3>
+            <p class="service-description">Manutenzione e riparazioni edilizie</p>
+        </div>
+    </div>
+</section>
 
     <footer>
         <p>&copy; 2025 Ristrutturazioni Morcianesi. Tutti i diritti riservati.</p>

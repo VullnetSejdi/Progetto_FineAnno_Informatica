@@ -1,0 +1,55 @@
+# Database di Ristrutturazioni Morcianesi
+database.db
+database_backup_*.db
+rm_utenti.db
+rm_preventivi.db
+
+# File di cache delle immagini ridimensionate
+ristrutturazioni_morcianesi/static/images/cache/
+ristrutturazioni_morcianesi/static/uploads/preventivi/*
+!ristrutturazioni_morcianesi/static/uploads/preventivi/.gitkeep
+
+# File di log
+ristrutturazioni_morcianesi/logs/
+error_log_*.txt
+accessi.log
+
+# Configurazioni locali (credenziali per email, API, ecc.)
+config_locale.py
+.env.morciano
+.env.sviluppo
+api_keys.json
+
+# File temporanei di backup editor
+*~
+*.bak
+*.swp
+*.tmp
+.emacs.d/
+vim_backups/
+
+# Ambiente di sviluppo Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ambienti virtuali
+.venv/
+venv_rm/
+venv-rimini/
+env/
+
+# Cartelle IDE 
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.settings/
+
+# File specifici macOS/Windows
+.DS_Store
+Thumbs.db
+desktop.ini

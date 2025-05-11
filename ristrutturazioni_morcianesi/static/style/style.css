@@ -1,254 +1,146 @@
-/* Reset di base */
+/* Reset e stili di base */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+:root {
+    --primary: #1B9DD1;
+    --primary-dark: #156E91;
+    --secondary: #2c3e50;
+    --light: #ecf0f1;
+    --dark: #2c3e50;
+    --accent: #e74c3c;
+    --gray: #95a5a6;
+    --light-gray: #f8f9fa;
+    --text: #333;
+    --text-light: #fff;
+    --transition: all 0.3s ease;
+    --shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    --radius: 8px;
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: #f4f4f9;
-    margin: 0;
+    color: var(--text);
+    background-color: var(--light);
+    overflow-x: hidden;
 }
 
-/* Header */
-header {
-    background: linear-gradient(to right, #1B9DD1, #156E91);
-    color: #fff;
-    padding: 1rem 0;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+/* Tipografia generale */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    color: var(--primary-dark);
 }
 
-header .logo {
-    width: 100px; /* Regola la dimensione del logo */
-    height: auto;
-    display: block;
-    margin: 0 auto 1rem; /* Centra il logo e aggiunge uno spazio sotto */
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
+
+p {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
 }
 
-header h1 {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-}
-
-header nav {
-    margin-top: 0.5rem;
-}
-
-header nav a {
-    color: #fff;
-    text-decoration: none;
-    margin: 0 1rem;
-    font-size: 1rem;
-    transition: color 0.3s ease;
-}
-
-header nav a:hover {
-    color: #B3E5FC;
-}
-
-/* Stile iniziale della barra di navigazione */
+/* Navbar e navigazione */
 .navbar {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    background: linear-gradient(to right, #1B9DD1, #156E91);
-    color: #fff;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--text-light);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.5rem 2rem; /* Ridotta rispetto a prima */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem 5%;
+    box-shadow: var(--shadow);
     z-index: 1000;
-    transition: all 0.3s ease; /* Transizione fluida */
+    transition: var(--transition);
 }
 
 .navbar.shrink {
-    padding: 0.8rem 2rem; /* Riduce il padding */
-    background: linear-gradient(to right, #156E91, #0F5A73); /* Cambia leggermente il colore */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0.8rem 5%;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary) 100%);
 }
 
-/* Stile iniziale della barra di navigazione */
 .navbar .logo {
-    width: 180px; /* Aumenta la larghezza del logo */
+    width: 160px;
     height: auto;
-    transition: width 0.3s ease; /* Transizione fluida per il logo */
+    transition: var(--transition);
 }
 
 .navbar.shrink .logo {
-    width: 120px; /* Riduce la dimensione del logo quando la barra si restringe */
+    width: 120px;
 }
 
 .navbar nav {
     display: flex;
-    gap: 1rem;
+    gap: 2rem;
 }
 
 .navbar nav a {
-    color: #fff;
+    color: var(--text-light);
     text-decoration: none;
-    font-size: 1rem;
-    transition: color 0.3s ease;
+    font-size: 1.1rem;
+    font-weight: 500;
+    position: relative;
+    padding: 0.5rem 0;
+    transition: var(--transition);
 }
 
-.navbar nav a:hover {
-    color: #B3E5FC;
+.navbar nav a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--text-light);
+    transition: var(--transition);
 }
 
-/* Menu hamburger per dispositivi mobili */
+.navbar nav a:hover::after {
+    width: 100%;
+}
+
+/* Menu hamburger */
 .hamburger {
     display: none;
     flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 21px;
     cursor: pointer;
-    gap: 5px;
+    z-index: 1001;
 }
 
 .hamburger div {
-    width: 25px;
+    width: 100%;
     height: 3px;
-    background: #fff;
-    transition: all 0.3s ease;
-}
-
-/* Mostra il menu hamburger su schermi piccoli */
-@media (max-width: 768px) {
-    .navbar nav {
-        display: none; /* Nasconde i link */
-    }
-
-    .hamburger {
-        display: flex; /* Mostra il menu hamburger */
-    }
-
-    .navbar.active nav {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background: linear-gradient(to right, #1B9DD1, #156E91);
-        padding: 1rem 0;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .navbar.active nav a {
-        padding: 1rem;
-        text-align: center;
-        font-size: 1.2rem;
-    }
-}
-
-/* Stile iniziale della barra */
-.story-overlay {
-    position: relative;
-    opacity: 0; /* Nasconde la barra inizialmente */
-    transform: translateY(50px); /* Sposta la barra verso il basso */
-    transition: opacity 0.5s ease, transform 0.5s ease; /* Aggiunge una transizione fluida */
-    padding: 4rem 2rem;
-    background: rgba(0, 0, 0, 0.5); /* Sfondo semi-trasparente */
-    color: #fff;
-    text-align: center;
-    z-index: 10;
-}
-
-/* Stile quando la barra è visibile */
-.story-overlay.visible {
-    opacity: 1; /* Rende la barra visibile */
-    transform: translateY(0); /* Riporta la barra nella posizione originale */
-    background: rgba(0, 0, 0, 0.7); /* Rende lo sfondo meno trasparente */
-}
-
-.extra-content {
-    padding: 4rem 2rem;
-    background: #f9f9f9;
-    text-align: center;
-}
-
-.extra-content h2 {
-    font-size: 2rem;
-    color: #1B9DD1;
-    margin-bottom: 1rem;
-}
-
-.extra-content p {
-    font-size: 1.2rem;
-    color: #555;
-    margin-bottom: 2rem;
-}
-
-.extra-content ul {
-    list-style: none;
-    padding: 0;
-}
-
-.extra-content li {
-    font-size: 1rem;
-    color: #333;
-    margin-bottom: 0.5rem;
-}
-/* Section Styling */
-section {
-    padding: 2rem 1rem;
-    text-align: center;
-}
-
-section h2 {
-    font-size: 2rem;
-    color: #1B9DD1;
-    margin-bottom: 1rem;
-}
-
-section p {
-    font-size: 1rem;
-    color: #555;
-    margin-bottom: 1.5rem;
-}
-
-/* Footer */
-footer {
-    background: #333;
-    color: #fff;
-    text-align: center;
-    padding: 1rem 0;
-    margin-top: 2rem;
-}
-
-footer p {
-    font-size: 0.9rem;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .hero h1 {
-        font-size: 2rem;
-    }
-
-    .hero p {
-        font-size: 1rem;
-    }
-
-    header nav a {
-        font-size: 0.9rem;
-    }
+    background-color: var(--text-light);
+    transition: var(--transition);
 }
 
 /* Parallax Section */
 .parallax-section {
     position: relative;
-    height: 100vh; /* Altezza a schermo intero */
-    overflow: hidden;
+    height: 100vh;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     text-align: center;
-    color: #fff;
+    color: var(--text-light);
+    overflow: hidden;
+    margin-top: 0;
+    padding-top: 80px; /* Mantiene lo spazio per la navbar fissa */
 }
 
 .parallax-background {
@@ -256,41 +148,330 @@ footer p {
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 120%; /* Leggermente più alto per l'effetto parallax */
     background: url('/static/images/casavistamareristrutturataconfinestre.png') no-repeat center center/cover;
-    transform: translateY(0); /* Posizione iniziale */
-    z-index: 1;
+    transform: translateY(0);
+    z-index: -1;
     will-change: transform;
 }
 
 .parallax-content {
-    position: relative;
-    z-index: 2;
-    opacity: 0; /* Inizia nascosto */
-    transform: translateY(50px); /* Spostato verso il basso */
-    transition: opacity 0.8s ease, transform 0.8s ease; /* Transizione fluida */
+    max-width: 800px;
+    padding: 1rem; 
+    transform: translateY(30px);
+    opacity: 0;
+    transition: transform 0.8s ease, opacity 0.8s ease;
+    z-index: 1; 
 }
 
 .parallax-section.visible .parallax-content {
-    opacity: 1; /* Rende il contenuto visibile */
-    transform: translateY(0); /* Riporta il contenuto nella posizione originale */
+    transform: translateY(60px); 
+    opacity: 1;
 }
 
-/* Pulsanti */
-.parallax-content .btn {
+.parallax-content h2 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--text-light);
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8); 
+}
+
+.parallax-content p {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    color: var(--light); 
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8); 
+}
+
+.btn {
     display: inline-block;
-    margin: 1rem;
-    padding: 0.8rem 1.5rem;
-    font-size: 1.2rem;
-    color: #fff;
-    background: #1B9DD1;
+    padding: 0.8rem 1.8rem;
+    background: var(--primary);
+    color: var(--text-light);
     border: none;
-    border-radius: 5px;
+    border-radius: var(--radius);
+    font-size: 1.1rem;
+    font-weight: 500;
     text-decoration: none;
-    transition: background 0.3s ease, transform 0.3s ease;
+    cursor: pointer;
+    transition: var(--transition);
+    margin: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.parallax-content .btn:hover {
-    background: #156E91;
-    transform: scale(1.05);
+.btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+
+/* Extra Content Section */
+.extra-content {
+    background: var(--light-gray);
+    padding: 5rem 0;
+    text-align: center;
+}
+
+.extra-content h2 {
+    font-size: 2.5rem;
+    color: var(--primary-dark);
+    margin-bottom: 2rem;
+}
+
+.extra-content p {
+    font-size: 1.2rem;
+    color: var(--text);
+    max-width: 800px;
+    margin: 0 auto 2rem;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.service-card {
+    background-color: white;
+    border-radius: var(--radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.service-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.service-icon {
+    font-size: 3rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+.service-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--secondary);
+}
+
+.service-description {
+    color: var(--text);
+    font-size: 1rem;
+}
+
+/* Footer */
+footer {
+    background: var(--secondary);
+    color: var(--text-light);
+    text-align: center;
+    padding: 3rem 0;
+}
+
+footer p {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Stili per l'icona di login e testo utente nella navbar desktop */
+.navbar nav {
+    /* display: flex; è già presente sopra */
+    /* gap: 2rem; è già presente sopra */
+    align-items: center; /* Allinea verticalmente gli elementi nella nav */
+}
+
+.nav-auth-icon-link {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 1rem; /* Spazio dagli altri link di navigazione */
+}
+
+.navbar-login-icon {
+    height: 28px; /* Dimensione icona - puoi aggiustare */
+    width: 28px;  /* Dimensione icona - puoi aggiustare */
+    vertical-align: middle;
+}
+
+.nav-username {
+    margin-left: 1rem; /* Spazio dal link precedente */
+    margin-right: 0.5rem; /* Spazio prima del link di logout */
+    color: var(--text-light);
+    font-weight: 500;
+    white-space: nowrap; /* Evita che il nome utente vada a capo */
+}
+
+.nav-auth-link { /* Stile per il link "Logout" testuale */
+    margin-left: 0.5rem;
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1.1rem; /* Coerenza con gli altri link nav */
+    position: relative;
+    padding: 0.5rem 0;
+}
+
+.nav-auth-link::after { /* Effetto sottolineatura per il link Logout */
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--text-light);
+    transition: var(--transition);
+}
+
+.nav-auth-link:hover::after {
+    width: 100%;
+}
+
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .navbar {
+        padding: 1rem 5%;
+    }
+    
+    h1 { font-size: 2.2rem; }
+    h2 { font-size: 1.8rem; }
+    
+    .parallax-content h2 {
+        font-size: 2.5rem;
+    }
+    
+    .parallax-content p {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar nav { /* Stili per il menu a comparsa */
+        position: fixed;
+        top: 0; /* Parte dall'alto */
+        right: -100%; /* Inizialmente nascosto fuori schermo a destra */
+        width: 70%; /* Larghezza del menu */
+        max-width: 320px; /* Larghezza massima per non essere troppo invadente */
+        height: 100vh; /* Altezza completa dello schermo */
+        background: var(--primary-dark); /* Sfondo scuro per il menu */
+        flex-direction: column; /* Elementi in colonna */
+        align-items: center; /* Centra gli elementi orizzontalmente */
+        justify-content: center; /* Centra gli elementi verticalmente */
+        gap: 1.5rem; /* Spazio tra gli elementi del menu */
+        transition: right 0.4s ease-in-out; /* Transizione più fluida per 'right' */
+        z-index: 999; /* Sotto l'hamburger ma sopra il resto del contenuto */
+        padding: 2rem; /* Padding interno */
+        box-shadow: -5px 0 15px rgba(0,0,0,0.2); /* Ombra a sinistra del menu */
+    }
+    
+    .navbar.active nav {
+        right: 0; /* Mostra il menu facendolo scorrere da destra */
+    }
+    
+    .hamburger {
+        display: flex; /* Mostra l'hamburger su schermi più piccoli */
+    }
+    
+    .navbar.active .hamburger div:nth-child(1) {
+        transform: translateY(9px) rotate(45deg);
+    }
+    
+    .navbar.active .hamburger div:nth-child(2) {
+        opacity: 0;
+    }
+    
+    .navbar.active .hamburger div:nth-child(3) {
+        transform: translateY(-9px) rotate(-45deg);
+    }
+
+    /* Stili per gli elementi dentro il menu mobile */
+    .navbar nav a,
+    .nav-auth-link { /* Link di navigazione e link Logout */
+        color: var(--text-light);
+        font-size: 1.2rem; /* Testo più grande per facilitare il tocco */
+        padding: 0.8rem 0;
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Separatore leggero */
+    }
+    .navbar nav a:last-of-type, /* Rimuove il bordo dall'ultimo link di navigazione standard */
+    .nav-auth-link { /* Anche il link di logout non ha bordo sotto se è l'ultimo */
+         border-bottom: none;
+    }
+
+    .navbar nav a::after { /* Rimuove l'effetto underline specifico del desktop */
+        display: none;
+    }
+    .navbar nav a:hover {
+        background-color: rgba(255,255,255,0.05); /* Leggero feedback al tocco/hover */
+    }
+
+
+    .nav-username { /* Testo di benvenuto nel menu mobile */
+        color: var(--text-light);
+        font-size: 1.2rem;
+        padding: 0.8rem 0;
+        width: 100%;
+        text-align: center;
+        margin-left: 0; /* Resetta margini desktop */
+        margin-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        order: -1; /* Sposta il benvenuto in cima alla lista nel menu mobile */
+    }
+
+    .nav-auth-icon-link { /* Icona di login nel menu mobile */
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding: 0.8rem 0;
+        margin-left: 0; /* Resetta margini desktop */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .navbar-login-icon { /* Icona nel menu mobile */
+        height: 32px; /* Leggermente più grande per mobile */
+        width: 32px;
+    }
+    
+    .parallax-content {
+        padding: 1.5rem;
+    }
+    
+    .parallax-content h2 {
+        font-size: 2rem;
+    }
+    
+    .parallax-content p {
+        font-size: 1rem;
+    }
+    
+    .stage h2 { /* Se hai una classe .stage, altrimenti rimuovi o adatta */
+        font-size: 2rem;
+    }
+    
+    .stage p { /* Se hai una classe .stage, altrimenti rimuovi o adatta */
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar .logo {
+        width: 120px;
+    }
+    
+    .navbar.shrink .logo {
+        width: 100px;
+    }
+    
+    .btn {
+        padding: 0.7rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .service-card {
+        padding: 1.5rem;
+    }
 }
