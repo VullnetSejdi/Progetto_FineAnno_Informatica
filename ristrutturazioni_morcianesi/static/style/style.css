@@ -72,13 +72,14 @@ p {
 }
 
 .navbar .logo {
-    width: 160px;
+    width: 460px;
+    max-width: 100%;
     height: auto;
     transition: var(--transition);
 }
 
 .navbar.shrink .logo {
-    width: 120px;
+    width: 320px;
 }
 
 .navbar nav {
@@ -474,4 +475,14 @@ footer p {
     .service-card {
         padding: 1.5rem;
     }
+}
+
+a:focus, button:focus, input:focus, select:focus, textarea:focus {
+    outline: 2px solid #2196f3;
+    outline-offset: 2px;
+}
+
+.navbar a:focus, .btn:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
 }

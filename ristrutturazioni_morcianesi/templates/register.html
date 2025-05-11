@@ -1,97 +1,65 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Registrati per diventare cliente di Ristrutturazioni Morcianesi">
-    <title>{{ title }} - Ristrutturazioni Morcianesi</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style/style_login_registration.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
-    <header class="navbar">
-        <a href="{{ url_for('home') }}">
-            <img src="{{ url_for('static', filename='images/Logo_RistrutturazioniMorcianesi.png') }}" alt="Logo Ristrutturazioni Morcianesi" class="logo">
-        </a>
-        <nav>
-            <a href="{{ url_for('home') }}">Home</a>
-            <a href="{{ url_for('home') }}#chi-siamo">Chi Siamo</a>
-            <a href="{{ url_for('services') }}">Servizi</a>
-            <a href="{{ url_for('gallery') }}">Galleria</a>
-            <a href="{{ url_for('contact') }}">Contatti</a>
-            
-            {% if logged_in_user %}
-                <span class="nav-username">Benvenuto, {{ logged_in_user.username }}!</span>
-                <a href="{{ url_for('logout') }}" class="nav-auth-link">Logout</a>
-            {% else %}
-                <a href="{{ url_for('login') }}" class="nav-auth-icon-link active" title="Accedi o Registrati">
-                    <img src="{{ url_for('static', filename='favicon/personal_area.ico') }}" alt="Area Personale" class="navbar-login-icon">
-                </a>
+{% extends "base.html" %}
+
+{% block title %}Registrazione - Ristrutturazioni Morcianesi{% endblock %}
+{% block meta_description %}Registrati e diventa cliente di Ristrutturazioni Morcianesi{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/style_login_registration.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h2>Crea un Account</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
             {% endif %}
-        </nav>
-        <div class="hamburger">
-            <div></div>
-            <div></div>
-            <div></div>
-        </div>
-    </header>
+        {% endwith %}
+        
+        <form action="{{ url_for('register') }}" method="POST" id="register-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="username">Nome Utente</label>
+                <input type="text" id="username" name="username" value="{{ username_val or '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value="{{ email_val or '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-container">
+                    <input type="password" id="password" name="password" required>
+                    <i class="fa fa-eye toggle-password"></i>
+                </div>
+                <div class="password-strength">
+                    <div class="meter"></div>
+                    <p class="hint">La password deve contenere almeno 12 caratteri</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Conferma Password</label>
+                <div class="password-container">
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                    <i class="fa fa-eye toggle-password"></i>
+                </div>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn">Registrati</button>
+            </div>
+            <div class="form-footer">
+                <p>Hai già un account? <a href="{{ url_for('login') }}">Accedi</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
 
-    <main class="auth-container">
-        <div class="auth-box">
-            <h2>Crea un Account</h2>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <form action="{{ url_for('register') }}" method="POST" id="register-form">
-                <div class="form-group">
-                    <label for="username">Nome Utente</label>
-                    <input type="text" id="username" name="username" value="{{ username_val or '' }}" required>
-                </div>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" value="{{ email_val or '' }}" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <div class="password-container">
-                        <input type="password" id="password" name="password" required>
-                        <i class="fa fa-eye toggle-password"></i>
-                    </div>
-                    <div class="password-strength">
-                        <div class="meter"></div>
-                        <p class="hint">La password deve contenere almeno 6 caratteri</p>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="confirm_password">Conferma Password</label>
-                    <div class="password-container">
-                        <input type="password" id="confirm_password" name="confirm_password" required>
-                        <i class="fa fa-eye toggle-password"></i>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <button type="submit" class="btn">Registrati</button>
-                </div>
-                <div class="form-footer">
-                    <p>Hai già un account? <a href="{{ url_for('login') }}">Accedi</a></p>
-                </div>
-            </form>
-        </div>
-    </main>
-
-    <footer>
-        <p>&copy; {{ year }} Ristrutturazioni Morcianesi. Tutti i diritti riservati.</p>
-    </footer>
-
-    <script src="{{ url_for('static', filename='script/scroll_effect.js') }}"></script>
-    <script src="{{ url_for('static', filename='script/registration_and_login.js') }}"></script>
-</body>
-</html>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='script/registration_and_login.js') }}"></script>
+{% endblock %}
