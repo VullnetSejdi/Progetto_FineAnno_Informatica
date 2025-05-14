@@ -3,22 +3,83 @@
 {% block title %}Home - Ristrutturazioni Morcianesi{% endblock %}
 
 {% block content %}
-    <section class="parallax-section" id="chi-siamo">
+    <section class="parallax-section" id="hero">
         <div class="parallax-background"></div>
         <div class="parallax-content">
             <h2>RISTRUTTURAZIONI MORCIANESI</h2>
-            <p>Da oltre 20 anni miglioriamo la tua casa, con passione e professionalità.</p>
+            <p>Da oltre 20 anni non ristrutturiamo solo spazi, ma creiamo luoghi in cui tornare a respirare.</p>
             <div>
-                <a href="/quote" class="btn">Richiedi un Preventivo</a>
-                <a href="/gallery" class="btn">Guarda i Nostri Lavori</a>
+                <a href="{{ url_for('quote') }}" class="btn">Richiedi un Preventivo</a>
+                <a href="{{ url_for('gallery') }}" class="btn">Guarda i Nostri Lavori</a>
             </div>
         </div>
     </section>
 
-    <section class="stage_overlay">
-        <div class="stage">
-            <h2>La Nostra Missione</h2>
-            <p>Offriamo servizi di ristrutturazione e costruzione di alta qualità, garantendo risultati eccellenti e soddisfazione del cliente.</p>
+    <section class="about-section" id="chi-siamo">
+        <div class="about-container">
+            <div class="about-header">
+                <span class="section-tag">La nostra storia</span>
+                <h2 class="about-title">Chi siamo</h2>
+                <div class="title-underline"></div>
+            </div>
+            
+            <div class="about-content">
+                <div class="about-image-area">
+                    <div class="image-frame">
+                        <img src="{{ url_for('static', filename='images/chi_siamo.png') }}" alt="Ristrutturazioni Morcianesi team" class="about-image">
+                    </div>
+                    <div class="experience-counter">
+                        <div class="counter-inner">
+                            <span class="counter-number">20+</span>
+                            <span class="counter-text">Anni di esperienza</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="about-text-area">
+                    <p class="about-description"><strong>Ristrutturazioni Morcianesi</strong>  è un’impresa nata a Morciano di Romagna, con oltre due decenni di esperienza nel settore edile. Offriamo ristrutturazioni complete e su misura, gestendo ogni fase del lavoro con serietà, competenza e materiali di alta qualità.
+                        
+                        Operiamo in tutta Rimini e provincia, Pesaro e provincia, e nelle zone limitrofe, portando in ogni progetto la nostra passione artigianale e l’efficienza di un’organizzazione collaudata.
+                        
+                        Siamo il partner ideale per chi cerca un risultato solido, duraturo e senza sorprese. Affidati a noi: il tuo spazio, lo trasformiamo in valore.</p>
+                    
+                    <div class="values-grid">
+                        <div class="value-card">
+                            <div class="value-icon">
+                                <i class="fas fa-medal"></i>
+                            </div>
+                            <h3 class="value-title">Professionalità</h3>
+                            <p class="value-desc">Competenza e precisione in ogni progetto</p>
+                        </div>
+                        <div class="value-card">
+                            <div class="value-icon">
+                                <i class="fas fa-gem"></i>
+                            </div>
+                            <h3 class="value-title">Qualità</h3>
+                            <p class="value-desc">Materiali di prima scelta e finiture impeccabili</p>
+                        </div>
+                        <div class="value-card">
+                            <div class="value-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <h3 class="value-title">Puntualità</h3>
+                            <p class="value-desc">Rispetto dei tempi concordati</p>
+                        </div>
+                        <div class="value-card">
+                            <div class="value-icon">
+                                <i class="fas fa-search-dollar"></i>
+                            </div>
+                            <h3 class="value-title">Trasparenza</h3>
+                            <p class="value-desc">Preventivi dettagliati e senza sorprese</p>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('contact') }}" class="about-cta">
+                        <span>Contattaci</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
         </div>
     </section>
 

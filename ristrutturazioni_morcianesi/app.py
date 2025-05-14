@@ -10,22 +10,15 @@ import secrets
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-def safe_get(row, key, default=None):
-    """Helper per ottenere valori da sqlite3.Row con default per colonne mancanti."""
-    try:
-        return row[key]
-    except (IndexError, KeyError):
-        return default
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Gobettidegasperiano' 
-csrf = CSRFProtect(app)  # Attiva la protezione CSRF
+csrf = CSRFProtect(app)
 
 # Configurazione email
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_USER = 'ristruttura.morcianesi.verifica@gmail.com'  # Sostituisci con la tua email
-EMAIL_PASSWORD = 'mgtcrlketbprtoin'  # Usa una password per app (non la password normale)
+EMAIL_USER = 'ristruttura.morcianesi.verifica@gmail.com'
+EMAIL_PASSWORD = 'mgtcrlketbprtoin'
 
 # Percorso del database
 DATABASE = os.path.join(app.root_path, 'database.db')
@@ -36,7 +29,7 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row  # Per ottenere i risultati come dizionari
+        db.row_factory = sqlite3.Row
     return db
 
 @app.teardown_appcontext
@@ -60,17 +53,40 @@ def init_db_command():
     init_db()
     print('Database inizializzato.')
 
-# --- Funzione per inviare email di verifica ---
+# --- Helper function ---
+def safe_get(row, key, default=None):
+    """Helper per ottenere valori da sqlite3.Row con default per colonne mancanti."""
+    try:
+        return row[key]
+    except (IndexError, KeyError):
+        return default
+
+# --- Funzione per inviare email ---
+def send_email(to_email, subject, html_content):
+    """Funzione generica per inviare email."""
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_USER
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(html_content, 'html'))
+    
+    try:
+        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
+        server.starttls()
+        server.login(EMAIL_USER, EMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Errore nell'invio dell'email: {e}")
+        return False
+
 def send_verification_email(user_email, username, token):
     """Invia un'email di verifica all'utente."""
     verification_url = url_for('verify_email', token=token, _external=True)
+    subject = 'Verifica il tuo account Ristrutturazioni Morcianesi'
     
-    msg = MIMEMultipart()
-    msg['From'] = EMAIL_USER
-    msg['To'] = user_email
-    msg['Subject'] = 'Verifica il tuo account Ristrutturazioni Morcianesi'
-    
-    body = f'''
+    html_content = f'''
     <html>
     <body>
         <h2>Benvenuto su Ristrutturazioni Morcianesi, {username}!</h2>
@@ -85,30 +101,14 @@ def send_verification_email(user_email, username, token):
     </html>
     '''
     
-    msg.attach(MIMEText(body, 'html'))
+    return send_email(user_email, subject, html_content)
     
-    try:
-        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
-        server.starttls()
-        server.login(EMAIL_USER, EMAIL_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        print(f"Errore nell'invio dell'email: {e}")
-        return False
-    
-# --- Funzione per inviare email di reset password ---
 def send_reset_password_email(user_email, username, token):
     """Invia un'email per il reset della password."""
     reset_url = url_for('reset_password', token=token, _external=True)
+    subject = 'Reset Password - Ristrutturazioni Morcianesi'
     
-    msg = MIMEMultipart()
-    msg['From'] = EMAIL_USER
-    msg['To'] = user_email
-    msg['Subject'] = 'Reset Password - Ristrutturazioni Morcianesi'
-    
-    body = f'''
+    html_content = f'''
     <html>
     <body>
         <h2>Reset Password - Ristrutturazioni Morcianesi</h2>
@@ -124,18 +124,7 @@ def send_reset_password_email(user_email, username, token):
     </html>
     '''
     
-    msg.attach(MIMEText(body, 'html'))
-    
-    try:
-        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
-        server.starttls()
-        server.login(EMAIL_USER, EMAIL_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        print(f"Errore nell'invio dell'email di reset: {e}")
-        return False
+    return send_email(user_email, subject, html_content)
 
 # --- Classe User per gestire gli utenti ---
 class User:
@@ -212,6 +201,25 @@ class User:
             )
         return None
 
+    @staticmethod
+    def get_by_reset_token(token):
+        """Recupera un utente dal database tramite token di reset password."""
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute('SELECT * FROM users WHERE reset_token = ?', (token,))
+        user_data = cursor.fetchone()
+        if user_data:
+            return User(
+                id=user_data['id'],
+                username=user_data['username'],
+                email=user_data['email'],
+                password_hash=user_data['password_hash'],
+                is_verified=safe_get(user_data, 'is_verified', 0),
+                reset_token=safe_get(user_data, 'reset_token'),
+                reset_token_created_at=safe_get(user_data, 'reset_token_created_at')
+            )
+        return None
+
     def save(self):
         """Salva un nuovo utente nel database o aggiorna un utente esistente."""
         db = get_db()
@@ -263,27 +271,6 @@ class User:
 
         return reset_token
 
-    @staticmethod
-    def get_by_reset_token(token):
-        """Recupera un utente dal database tramite token di reset password."""
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute('SELECT * FROM users WHERE reset_token = ?', (token,))
-        user_data = cursor.fetchone()
-        if user_data:
-            return User(
-                id=user_data['id'],
-                username=user_data['username'],
-                email=user_data['email'],
-                password_hash=user_data['password_hash'],
-                is_verified=safe_get(user_data, 'is_verified', 0),
-                verification_token=safe_get(user_data, 'verification_token'),
-                token_created_at=safe_get(user_data, 'token_created_at'),
-                reset_token=safe_get(user_data, 'reset_token'),
-                reset_token_created_at=safe_get(user_data, 'reset_token_created_at')
-            )
-        return None
-
     def update_password(self, new_password):
         """Aggiorna la password dell'utente e rimuove il token di reset."""
         self.password_hash = generate_password_hash(new_password)
@@ -303,10 +290,10 @@ def inject_global_vars():
     user_id = session.get('user_id')
     user = None
     if user_id:
-        user = User.get_by_id(user_id) # Recupera l'oggetto utente se loggato
+        user = User.get_by_id(user_id)
     return {
         'year': datetime.utcnow().year,
-        'logged_in_user': user # Rende l'utente (o None) disponibile ai template
+        'logged_in_user': user
     }
 
 # --- Route Principali ---
@@ -316,7 +303,7 @@ def home():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if 'user_id' in session: # Controlla se l'utente è già loggato
+    if 'user_id' in session:
         return redirect(url_for('home'))
 
     if request.method == 'POST':
@@ -369,19 +356,18 @@ def register():
             for error in errors:
                 flash(error, 'danger')
             return render_template('register.html', title='Registrazione',
-                                   username_val=username, email_val=email)
+                                  username_val=username, email_val=email)
 
     return render_template('register.html', title='Registrazione')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if 'user_id' in session: # Controlla se l'utente è già loggato
+    if 'user_id' in session:
         return redirect(url_for('home'))
 
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        # remember = True if request.form.get('remember') else False
         errors = []
 
         if not email:
@@ -393,10 +379,8 @@ def login():
 
         if not errors:
             if not user:
-                print(f"Tentativo di accesso con email non registrata: {email}")
                 errors.append('Accesso non riuscito. Controlla email e password.')
             elif not check_password_hash(user.password_hash, password):
-                print(f"Password errata per l'utente: {email}")
                 errors.append('Accesso non riuscito. Controlla email e password.')
             elif not user.is_verified:
                 errors.append('Il tuo account non è stato ancora verificato. Per favore, controlla la tua email o richiedi una nuova email di verifica.')
@@ -407,8 +391,6 @@ def login():
             session['user_username'] = user.username
             flash('Accesso effettuato con successo!', 'success')
             next_page = request.args.get('next')
-            if next_page and next_page == url_for('quote_redirect', _external=False):
-                 return redirect(url_for('pagina_preventivo_ai'))
             return redirect(next_page) if next_page else redirect(url_for('home'))
         else:
             for error in errors:
@@ -472,46 +454,11 @@ def resend_verification():
 
 @app.route('/logout')
 def logout():
-    # Rimuovi le informazioni utente dalla sessione
     session.pop('user_id', None)
     session.pop('user_email', None)
     session.pop('user_username', None)
-    # session.clear() # In alternativa, per pulire tutta la sessione
     flash('Ti sei disconnesso.', 'info')
     return redirect(url_for('home'))
-
-@app.route('/quote')
-def quote_redirect():
-    if 'user_id' in session: # Controlla se l'utente è loggato
-        return redirect(url_for('pagina_preventivo_ai'))
-    else:
-        flash('Per richiedere un preventivo, per favore accedi o crea un account.', 'info')
-        return redirect(url_for('login', next=url_for('quote_redirect')))
-
-@app.route('/pagina-preventivo-ai')
-def pagina_preventivo_ai():
-    if 'user_id' not in session: # Protezione manuale della route
-        flash("Devi essere loggato per accedere a questa pagina.", "warning")
-        return redirect(url_for('login', next=request.url))
-    # L'utente è loggato, puoi recuperare i suoi dati dalla sessione se necessario
-    # user_email = session.get('user_email')
-    # user_username = session.get('user_username')
-    return render_template('preventivo_ai_form.html', title="Richiedi Preventivo AI")
-
-# --- Placeholder per le altre pagine della navbar ---
-@app.route('/services')
-def services():
-    return "Pagina Servizi (placeholder)", 200
-
-@app.route('/gallery')
-def gallery():
-    return "Pagina Galleria (placeholder)", 200
-
-@app.route('/contact')
-def contact():
-    return "Pagina Contatti (placeholder)", 200
-
-# Aggiungi queste route
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
@@ -530,8 +477,6 @@ def forgot_password():
                 flash('Si è verificato un errore nell\'invio dell\'email. Riprova più tardi.', 'danger')
         else:
             # Non rivelare che l'email non esiste (per sicurezza)
-            # Ma logghiamo per scopi di debug
-            print(f"Tentativo di reset password per email non registrata: {email}")
             flash('Se l\'indirizzo email è registrato, riceverai le istruzioni per reimpostare la password.', 'info')
             
         return redirect(url_for('login'))
@@ -581,6 +526,26 @@ def reset_password(token):
     
     return render_template('reset_password.html', token=token)
 
+# --- Pagine principali del sito ---
+@app.route('/services')
+def services():
+    return render_template('services.html', title="I Nostri Servizi")
+
+@app.route('/gallery')
+def gallery():
+    return render_template('gallery.html', title="Galleria Progetti")
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html', title="Contattaci")
+
+@app.route('/quote')
+def quote():
+    if 'user_id' not in session:
+        flash("Per richiedere un preventivo, per favore accedi o crea un account.", "info")
+        return redirect(url_for('login', next=request.url))
+    
+    return render_template('quote.html', title="Richiedi Preventivo")
 
 if __name__ == '__main__':
     app.run(debug=True)
