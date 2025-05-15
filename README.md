@@ -154,7 +154,7 @@ erDiagram
 
 ## 🧠 Schema Logico
 
-\`\`\`sql
+```sql
 Users(id, email, password_hash, name, phone, verified, created_at)  
 Verification_tokens(id, user_id [FK], token, expires_at)  
 Password_reset(id, user_id [FK], token, expires_at)  
@@ -162,7 +162,7 @@ Services(id, name, description, image_url)
 Requests(id, user_id [FK], type, details, created_at, status)  
 Request_services(request_id [FK], service_id [FK])  
 Chat_history(id, user_id [FK], message, response, timestamp)
-\`\`\`
+```
 
 ---
 
