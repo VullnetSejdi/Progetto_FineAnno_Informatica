@@ -337,10 +337,10 @@ ristrutturazioni_morcianesi/
 - Git (opzionale)
 
 ### 1. Clona il repository
-\`\`\`bash
+```bash
 git clone https://github.com/vullnetsejdii/Progetto_FineAnno_Informatica.git
 cd Progetto_FineAnno_Informatica
-\`\`\`
+```
 
 _Oppure scarica come ZIP ed estrai._
 
@@ -349,29 +349,29 @@ _Oppure scarica come ZIP ed estrai._
 ### 2. Crea ambiente virtuale
 
 **Windows:**
-\`\`\`bash
+```bash
 python -m venv venv
 venv\Scripts\activate
-\`\`\`
+```
 
 **Linux/macOS:**
-\`\`\`bash
+```bash
 python3 -m venv venv
 source venv/bin/activate
-\`\`\`
+```
 
 ---
 
 ### 3. Installa le dipendenze
-\`\`\`bash
+```bash
 pip install flask flask-mail flask-wtf email_validator requests python-dotenv werkzeug==2.3.7
-\`\`\`
+```
 
 ---
 
 ### 4. Crea file \`.env\`
 
-\`\`\`env
+```env
 SECRET_KEY=chiave_segreta_per_flask
 MAIL_SERVER=smtp.example.com
 MAIL_PORT=587
@@ -380,29 +380,29 @@ MAIL_PASSWORD=password_email
 MAIL_USE_TLS=True
 MAIL_DEFAULT_SENDER=tuoemail@example.com
 OPENROUTER_API_KEY=chiave_api_openrouter
-\`\`\`
+```
 
 ---
 
 ### 5. Inizializza il database
-\`\`\`bash
+```bash
 python init_db.py
-\`\`\`
+```
 
 ---
 
 ### 6. Avvia l'applicazione
-\`\`\`bash
+```bash
 python app.py
-\`\`\`
+```
 
 ---
 
 ### 7. Visita il sito
 Apri il browser su:
-\`\`\`
+```
 http://localhost:5000
-\`\`\`
+```
 
 ---
 
