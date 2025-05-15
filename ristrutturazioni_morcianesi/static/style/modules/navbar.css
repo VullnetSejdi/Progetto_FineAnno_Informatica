@@ -1,0 +1,238 @@
+/*---------------------------------------
+  NAVBAR E HEADER
+----------------------------------------*/
+/* Info bar / Topbar */
+.info-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 36px;
+    background-color: var(--secondary);
+    color: var(--text-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 5%;
+    z-index: 1010;
+    font-size: 0.8rem;
+}
+
+.info-bar-left, .info-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.info-bar a {
+    color: var(--text-light);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: var(--transition);
+}
+
+.info-bar a:hover {
+    color: var(--accent);
+}
+
+.info-bar i {
+    font-size: 1rem;
+}
+
+/* Navbar principale */
+.navbar {
+    position: fixed;
+    top: 36px; 
+    left: 0;
+    width: 100%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 5%;
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    transition: var(--transition);
+}
+
+.navbar.shrink {
+    padding: 0.8rem 5%;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary) 100%);
+}
+
+.navbar .logo {
+    width: 460px;
+    max-width: 100%;
+    height: auto;
+    transition: var(--transition);
+    margin-right: 3rem; 
+}
+
+.navbar.shrink .logo {
+    width: 320px;
+}
+
+.navbar nav {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    margin-left: 3rem; 
+}
+
+.navbar nav a {
+    color: var(--text-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    padding: 0.5rem 0;
+    transition: var(--transition);
+}
+
+.navbar nav a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--text-light);
+    transition: var(--transition);
+}
+
+.navbar nav a:hover::after {
+    width: 100%;
+}
+
+/* Link attivo */
+.navbar nav a.active {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.navbar nav a.active::before {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: #ffffff;
+    border-radius: 2px;
+}
+
+/* Menu hamburger */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 21px;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+.hamburger div {
+    width: 100%;
+    height: 3px;
+    background-color: var(--text-light);
+    transition: var(--transition);
+}
+
+/* Area utente navbar */
+.nav-auth-icon-link {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 1rem;
+}
+
+.navbar-login-icon {
+    width: 28px;
+    height: 28px;
+    vertical-align: middle;
+}
+
+.user-account-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.nav-username-compact {
+    font-size: 0.7rem;
+    margin-top: 2px;
+    color: white;
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+
+.user-dropdown {
+    position: absolute;
+    top: 65px;
+    right: 20px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    padding: 8px 0;
+    min-width: 120px;
+    display: none;
+    z-index: 1000;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 8px 15px;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+#user-account-icon:hover + .user-dropdown,
+.user-dropdown:hover {
+    display: block;
+}
+
+.nav-username {
+    margin-left: 1rem;
+    margin-right: 0.5rem;
+    color: var(--text-light);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.nav-auth-link {
+    margin-left: 0.5rem;
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1.1rem;
+    position: relative;
+    padding: 0.5rem 0;
+}
+
+.nav-auth-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--text-light);
+    transition: var(--transition);
+}
+
+.nav-auth-link:hover::after {
+    width: 100%;
+}

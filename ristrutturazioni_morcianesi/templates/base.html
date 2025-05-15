@@ -1,11 +1,14 @@
-/templates/base.html -->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{% block meta_description %}Ristrutturazioni Morcianesi - Esperienza e Qualità al Tuo Servizio{% endblock %}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Ristrutturazioni Morcianesi{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     {% block extra_css %}{% endblock %}
@@ -26,6 +29,7 @@
         <div class="info-bar-right">
         </div>
     </div>
+    
     <header class="navbar">
         <a href="{{ url_for('home') }}">
             <img src="{{ url_for('static', filename='images/Logo_RistrutturazioniMorcianesi.png') }}" alt="Logo Ristrutturazioni Morcianesi" class="logo" width="120" height="60">
@@ -65,54 +69,109 @@
         {% block content %}{% endblock %}
     </main>
 
-    <section class="contact-section">
-        <div class="contact-wave"></div>
-        <div class="contact-wrapper">
-            <div class="contact-header">
-                <h3>Rimani in contatto</h3>
-                <p>Siamo a tua disposizione per qualsiasi informazione</p>
+    <footer class="buttombar">
+        <div class="buttombar-container">
+            <div class="buttombar-section">
+                <h3>Ristrutturazioni Morcianesi</h3>
+                <div class="company-info">
+                    <p class="company-tagline">Dal 2003 al vostro servizio</p>
+                    <p class="company-subtitle">Qualità e professionalità</p>
+                </div>
             </div>
-            
-            <div class="contact-grid">
-                <div class="contact-card">
-                    <div class="contact-card-inner">
-                        <div class="contact-icon-wrapper">
-                            <i class="fas fa-map-marker-alt"></i>
-                        </div>
-                        <h4>La nostra sede</h4>
-                        <p>Via Francesco Petrarca, 19<br>Morciano di Romagna (RN)</p>
-                    </div>
-                </div>
-                
-                <div class="contact-card">
-                    <div class="contact-card-inner">
-                        <div class="contact-icon-wrapper">
-                            <i class="fas fa-phone-alt"></i>
-                        </div>
-                        <h4>Chiamaci</h4>
-                        <div class="contact-links">
-                            <a href="tel:+393517814956">Neti: 351 781 4956</a>
-                            <a href="tel:+393288837562">Shino: 328 883 7562</a>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="contact-card">
-                    <div class="contact-card-inner">
-                        <div class="contact-icon-wrapper">
-                            <i class="fas fa-envelope"></i>
-                        </div>
-                        <h4>Scrivici</h4>
-                        <div class="contact-links">
-                            <a href="mailto:ristrutturazionimorcianesi@gmail.com">ristrutturazionimorcianesi@gmail.com</a>
-                            <a href="mailto:ristrutturazionimorcianesi@pec.it">ristrutturazionimorcianesi@pec.it</a>
-                        </div>
-                    </div>
-                </div>
+
+            <div class="buttombar-section">
+                <h3>Dove siamo</h3>
+                <ul class="buttombar-links">
+                    <li>Via Francesco Petrarca, 19</li>
+                    <li>Morciano di Romagna (RN)</li>
+                </ul>
+            </div>
+
+            <div class="buttombar-section">
+                <h3>Contatti</h3>
+                <ul class="buttombar-links">
+                    <li><a href="tel:+393517814956">Neti: 351 781 4956</a></li>
+                    <li><a href="tel:+393288837562">Shino: 328 883 7562</a></li>
+                    <li><a href="mailto:ristrutturazionimorcianesi@gmail.com">ristrutturazionimorcianesi@gmail.com</a></li>
+                </ul>
+            </div>
+
+            <div class="buttombar-section">
+                <h3>Menu</h3>
+                <ul class="buttombar-links">
+                    <li><a href="{{ url_for('home') }}">Home</a></li>
+                    <li><a href="{{ url_for('home') }}#chi-siamo">Chi siamo</a></li>
+                    <li><a href="{{ url_for('services') }}">Servizi</a></li>
+                    <li><a href="{{ url_for('gallery') }}">Galleria</a></li>
+                    <li><a href="{{ url_for('contact') }}">Contatti</a></li>
+                </ul>
             </div>
         </div>
-    </section>
-    
-    <footer class="copyright-footer">
-        <p>&copy; {{ year }} Ristrutturazioni Morcianesi. Tutti i diritti riservati.</p>
+
+        <div class="buttombar-social">
+            <h3>Seguici</h3>
+            <div class="social-icons">
+                <a href="#" class="social-icon" title="LinkedIn">
+                    <img src="{{ url_for('static', filename='favicon/linkedin.ico') }}" alt="LinkedIn">
+                </a>
+                <a href="#" class="social-icon" title="Facebook">
+                    <img src="{{ url_for('static', filename='favicon/facebook.ico') }}" alt="Facebook">
+                </a>
+                <a href="#" class="social-icon" title="Instagram">
+                    <img src="{{ url_for('static', filename='favicon/instagram.ico') }}" alt="Instagram">
+                </a>
+            </div>
+        </div>
+
+        <div class="buttombar-copyright">
+            <p>&copy; {{ year }} Ristrutturazioni Morcianesi. Tutti i diritti riservati.</p>
+        </div>
     </footer>
+
+        <!-- Chat Button per preventivi -->
+    <div class="chat-button" id="chatButton">
+        <div class="chat-button-inner">
+            <i class="fas fa-calculator"></i>
+            <span>Preventivo<br>Rapido</span>
+        </div>
+    </div>
+    
+    <!-- Chat Container -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <h3>Assistente Preventivi</h3>
+            <div class="chat-controls">
+                <button class="chat-expand" id="chatExpand" title="Apri in nuova finestra"><i class="fas fa-external-link-alt"></i></button>
+                <button class="chat-close" id="chatClose" title="Chiudi"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        
+        <div class="chat-body">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-container">
+                <textarea class="chat-input" id="chatInput" placeholder="Come posso aiutarti oggi?"></textarea>
+                <button class="chat-send" id="chatSend"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                        <button class="close-alert">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='script/scroll_effect.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='script/chat.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

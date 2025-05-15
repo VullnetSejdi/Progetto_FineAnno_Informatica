@@ -1,0 +1,81 @@
+/*---------------------------------------
+  BOTTONI E CTA
+----------------------------------------*/
+.btn {
+    display: inline-block;
+    padding: 0.8rem 1.8rem;
+    background: var(--primary);
+    color: var(--text-light);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+    margin: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: var(--font-primary);
+}
+
+.btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background-color: var(--accent);
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Pulsante stiloso nella navbar */
+.nav-link.highlight {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white !important;
+    padding: 0.6rem 1.2rem !important;
+    border-radius: 4px; 
+    margin: 0 0.4rem;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-size: 0.9rem !important;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 10px rgba(27, 157, 209, 0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-link.highlight:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.7s ease;
+}
+
+.nav-link.highlight:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 15px rgba(27, 157, 209, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.nav-link.highlight:hover:before {
+    left: 100%;
+}
+
+.nav-link.highlight:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 8px rgba(21, 110, 145, 0.3);
+}

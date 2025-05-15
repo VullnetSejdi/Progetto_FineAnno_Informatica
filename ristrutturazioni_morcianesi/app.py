@@ -1,34 +1,51 @@
-from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, flash, session, g
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_wtf.csrf import CSRFProtect
-import sqlite3
+"""
+Ristrutturazioni Morcianesi - Applicazione Web
+---------------------------------------------
+Applicazione Flask per la gestione del sito web aziendale,
+sistema di autenticazione utenti e chat preventivi con AI.
+"""
+
 import os
 import re
-import smtplib
 import secrets
+import sqlite3
+import requests
+import json
+from datetime import datetime, timedelta
+from flask import (
+    Flask, render_template, request, redirect, url_for, flash, 
+    session, g, jsonify, current_app
+)
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_wtf.csrf import CSRFProtect
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import smtplib
+
+# =============== CONFIGURAZIONE DELL'APPLICAZIONE ===============
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'Gobettidegasperiano' 
+app.config.update(
+    SECRET_KEY='Gobettidegasperiano',
+    DATABASE=os.path.join(app.root_path, 'database.db'),
+    EMAIL_HOST='smtp.gmail.com',
+    EMAIL_PORT=587,
+    EMAIL_USER='ristruttura.morcianesi.verifica@gmail.com',
+    EMAIL_PASSWORD='mgtcrlketbprtoin',
+    OPENROUTER_API_KEY="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",
+    OPENROUTER_URL="https://openrouter.ai/api/v1/chat/completions",
+    DEBUG=True
+)
+
 csrf = CSRFProtect(app)
 
-# Configurazione email
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USER = 'ristruttura.morcianesi.verifica@gmail.com'
-EMAIL_PASSWORD = 'mgtcrlketbprtoin'
+# =============== DATABASE E CONNESSIONE ===============
 
-# Percorso del database
-DATABASE = os.path.join(app.root_path, 'database.db')
-
-# --- Funzioni per la gestione del database ---
 def get_db():
-    """Connessione al database."""
+    """Stabilisce e restituisce una connessione al database."""
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        db = g._database = sqlite3.connect(app.config['DATABASE'])
         db.row_factory = sqlite3.Row
     return db
 
@@ -51,9 +68,8 @@ def init_db():
 def init_db_command():
     """Comando da terminale per creare le tabelle."""
     init_db()
-    print('Database inizializzato.')
+    print('Database inizializzato con successo.')
 
-# --- Helper function ---
 def safe_get(row, key, default=None):
     """Helper per ottenere valori da sqlite3.Row con default per colonne mancanti."""
     try:
@@ -61,19 +77,20 @@ def safe_get(row, key, default=None):
     except (IndexError, KeyError):
         return default
 
-# --- Funzione per inviare email ---
+# =============== FUNZIONI PER L'INVIO DI EMAIL ===============
+
 def send_email(to_email, subject, html_content):
     """Funzione generica per inviare email."""
     msg = MIMEMultipart()
-    msg['From'] = EMAIL_USER
+    msg['From'] = app.config['EMAIL_USER']
     msg['To'] = to_email
     msg['Subject'] = subject
     msg.attach(MIMEText(html_content, 'html'))
     
     try:
-        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
+        server = smtplib.SMTP(app.config['EMAIL_HOST'], app.config['EMAIL_PORT'])
         server.starttls()
-        server.login(EMAIL_USER, EMAIL_PASSWORD)
+        server.login(app.config['EMAIL_USER'], app.config['EMAIL_PASSWORD'])
         server.send_message(msg)
         server.quit()
         return True
@@ -88,15 +105,23 @@ def send_verification_email(user_email, username, token):
     
     html_content = f'''
     <html>
-    <body>
-        <h2>Benvenuto su Ristrutturazioni Morcianesi, {username}!</h2>
-        <p>Grazie per esserti registrato. Per completare la registrazione, verifica il tuo indirizzo email cliccando sul link qui sotto:</p>
-        <p><a href="{verification_url}">Verifica il tuo account</a></p>
-        <p>Oppure copia questo link nel tuo browser:</p>
-        <p>{verification_url}</p>
-        <p>Il link scadrà tra 24 ore.</p>
-        <p>Se non hai richiesto questa registrazione, ignora questa email.</p>
-        <p>Cordiali saluti,<br>Il team di Ristrutturazioni Morcianesi</p>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #1B9DD1;">Benvenuto su Ristrutturazioni Morcianesi, {username}!</h2>
+            <p>Grazie per esserti registrato. Per completare la registrazione, verifica il tuo indirizzo email cliccando sul link qui sotto:</p>
+            <p>
+                <a href="{verification_url}" 
+                   style="display: inline-block; padding: 10px 20px; background-color: #1B9DD1; color: #ffffff; text-decoration: none; border-radius: 5px;">
+                   Verifica il tuo account
+                </a>
+            </p>
+            <p>Oppure copia questo link nel tuo browser:</p>
+            <p style="word-break: break-all; color: #666;">{verification_url}</p>
+            <p><strong>Nota:</strong> Il link scadrà tra 24 ore.</p>
+            <p>Se non hai richiesto questa registrazione, ignora questa email.</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="font-size: 0.9em; color: #777;">Cordiali saluti,<br>Il team di Ristrutturazioni Morcianesi</p>
+        </div>
     </body>
     </html>
     '''
@@ -110,24 +135,35 @@ def send_reset_password_email(user_email, username, token):
     
     html_content = f'''
     <html>
-    <body>
-        <h2>Reset Password - Ristrutturazioni Morcianesi</h2>
-        <p>Ciao {username},</p>
-        <p>Hai richiesto il reset della tua password. Clicca sul link qui sotto per impostare una nuova password:</p>
-        <p><a href="{reset_url}">Reset Password</a></p>
-        <p>Oppure copia questo link nel tuo browser:</p>
-        <p>{reset_url}</p>
-        <p>Il link scadrà tra 1 ora.</p>
-        <p>Se non hai richiesto il reset della password, ignora questa email.</p>
-        <p>Cordiali saluti,<br>Il team di Ristrutturazioni Morcianesi</p>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #1B9DD1;">Reset Password - Ristrutturazioni Morcianesi</h2>
+            <p>Ciao {username},</p>
+            <p>Hai richiesto il reset della tua password. Clicca sul link qui sotto per impostare una nuova password:</p>
+            <p>
+                <a href="{reset_url}" 
+                   style="display: inline-block; padding: 10px 20px; background-color: #1B9DD1; color: #ffffff; text-decoration: none; border-radius: 5px;">
+                   Reset Password
+                </a>
+            </p>
+            <p>Oppure copia questo link nel tuo browser:</p>
+            <p style="word-break: break-all; color: #666;">{reset_url}</p>
+            <p><strong>Attenzione:</strong> Il link scadrà tra 1 ora.</p>
+            <p>Se non hai richiesto il reset della password, ignora questa email.</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="font-size: 0.9em; color: #777;">Cordiali saluti,<br>Il team di Ristrutturazioni Morcianesi</p>
+        </div>
     </body>
     </html>
     '''
     
     return send_email(user_email, subject, html_content)
 
-# --- Classe User per gestire gli utenti ---
+# =============== MODELLO UTENTE ===============
+
 class User:
+    """Classe per la gestione degli utenti nel sistema."""
+    
     def __init__(self, id=None, username=None, email=None, password_hash=None, is_verified=0, 
                  verification_token=None, token_created_at=None, reset_token=None, reset_token_created_at=None):
         self.id = id
@@ -284,9 +320,11 @@ class User:
         db.commit()
         return True
 
-# --- Context Processor per l'anno nel footer e stato utente ---
+# =============== VARIABILI GLOBALI PER IL TEMPLATE ===============
+
 @app.context_processor
 def inject_global_vars():
+    """Aggiunge variabili globali a tutti i template."""
     user_id = session.get('user_id')
     user = None
     if user_id:
@@ -296,13 +334,11 @@ def inject_global_vars():
         'logged_in_user': user
     }
 
-# --- Route Principali ---
-@app.route('/')
-def home():
-    return render_template('home.html', title="Home")
+# =============== AUTENTICAZIONE E GESTIONE UTENTI ===============
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    """Gestisce la registrazione di un nuovo utente."""
     if 'user_id' in session:
         return redirect(url_for('home'))
 
@@ -313,6 +349,7 @@ def register():
         confirm_password = request.form.get('confirm_password')
         errors = []
 
+        # Validazione input
         if not username or len(username) < 3 or len(username) > 30:
             errors.append("Il nome utente deve avere tra 3 e 30 caratteri.")
         if not email:
@@ -362,6 +399,7 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Gestisce il login degli utenti."""
     if 'user_id' in session:
         return redirect(url_for('home'))
 
@@ -386,6 +424,7 @@ def login():
                 errors.append('Il tuo account non è stato ancora verificato. Per favore, controlla la tua email o richiedi una nuova email di verifica.')
         
         if not errors and user and user.is_verified:
+            # Login riuscito
             session['user_id'] = user.id
             session['user_email'] = user.email
             session['user_username'] = user.username
@@ -401,6 +440,7 @@ def login():
 
 @app.route('/verify/<token>')
 def verify_email(token):
+    """Verifica l'email dell'utente tramite token."""
     user = User.get_by_token(token)
     
     if not user:
@@ -421,6 +461,7 @@ def verify_email(token):
 
 @app.route('/resend-verification', methods=['GET', 'POST'])
 def resend_verification():
+    """Permette di richiedere un nuovo link di verifica."""
     if request.method == 'POST':
         email = request.form.get('email')
         user = User.get_by_email(email)
@@ -454,6 +495,7 @@ def resend_verification():
 
 @app.route('/logout')
 def logout():
+    """Gestisce il logout dell'utente."""
     session.pop('user_id', None)
     session.pop('user_email', None)
     session.pop('user_username', None)
@@ -462,6 +504,7 @@ def logout():
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
+    """Gestisce il recupero della password dimenticata."""
     if 'user_id' in session:
         return redirect(url_for('home'))
         
@@ -485,6 +528,7 @@ def forgot_password():
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
+    """Gestisce il reset della password tramite token."""
     if 'user_id' in session:
         return redirect(url_for('home'))
         
@@ -526,26 +570,333 @@ def reset_password(token):
     
     return render_template('reset_password.html', token=token)
 
-# --- Pagine principali del sito ---
-@app.route('/services')
-def services():
-    return render_template('services.html', title="I Nostri Servizi")
+# =============== CHAT AI CON OPENROUTER ===============
 
-@app.route('/gallery')
-def gallery():
-    return render_template('gallery.html', title="Galleria Progetti")
-
-@app.route('/contact')
-def contact():
-    return render_template('contact.html', title="Contattaci")
-
-@app.route('/quote')
-def quote():
-    if 'user_id' not in session:
-        flash("Per richiedere un preventivo, per favore accedi o crea un account.", "info")
-        return redirect(url_for('login', next=request.url))
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """API endpoint per gestire le richieste della chat con OpenRouter."""
+    if not request.is_json:
+        return jsonify({'error': 'La richiesta deve essere in formato JSON'}), 400
     
-    return render_template('quote.html', title="Richiedi Preventivo")
+    data = request.json
+    user_message = data.get('message', '')
+    chat_history = data.get('history', [])
+    
+    if not user_message:
+        return jsonify({'error': 'Il messaggio non può essere vuoto'}), 400
+    
+    # Ottieni l'ora corrente in Italia
+    now = datetime.now()
+    current_hour = now.hour
+    
+    # Determina il saluto in base all'ora
+    if 5 <= current_hour < 12:
+        time_greeting = "buongiorno"
+    elif 12 <= current_hour < 18:
+        time_greeting = "buon pomeriggio"
+    else:
+        time_greeting = "buonasera"
+    
+    # Preparazione dei messaggi per OpenRouter
+    messages = []
+    
+    # Aggiungi un messaggio di sistema che definisce il contesto
+        # Aggiungi un messaggio di sistema che definisce il contesto
+    messages.append({
+                "role": "system", 
+                "content": f"""Sei l'assistente virtuale ufficiale di Ristrutturazioni Morcianesi, azienda fondata nel 2003 a Morciano di Romagna (RN) e specializzata in ristrutturazioni edilizie di alta qualità. 
+
+        INFORMAZIONI SULL'AZIENDA:
+        - Nome: Ristrutturazioni Morcianesi
+        - Fondazione: 2003
+        - Sede: Via Francesco Petrarca, 19, Morciano di Romagna (RN)
+        - Contatti: Tel: 351 781 4956 (Neti), 328 883 7562 (Shino), Email: ristrutturazionimorcianesi@gmail.com
+        - Esperienza: Oltre 20 anni nel settore delle ristrutturazioni, con centinaia di progetti completati in tutta la provincia di Rimini e Pesaro
+        - Filosofia: Qualità, professionalità e rispetto delle tempistiche e dei preventivi concordati
+
+        SERVIZI OFFERTI:
+        1. Ristrutturazione completa appartamenti
+        2. Rifacimento bagni e cucine
+        3. Opere murarie e demolizioni
+        4. Impianti idraulici ed elettrici(Contatti stretti della ditta)
+        5. Pavimentazioni e rivestimenti
+        6. Controsoffitti e cartongesso
+        7. Pitture e decorazioni
+        8. Facciate esterne
+        9. Ristrutturazioni commerciali
+
+        PROCESSI DI LAVORO:
+        - Sopralluogo gratuito ed entro 24 ore
+        - Preventivo dettagliato senza impegno
+        - Progettazione personalizzata
+        - Gestione completa dei lavori e delle pratiche burocratiche
+        - Consegna nei tempi concordati
+        - Garanzia sui lavori eseguiti
+
+        ISTRUZIONI IMPORTANTI:
+        - L'ora attuale è {now.strftime('%H:%M')} e oggi è {now.strftime('%A %d %B %Y')}
+        - Se l'utente saluta con "ciao", "salve", "buongiorno", ecc., rispondi sempre con "{time_greeting}" seguito dalla tua risposta
+        - Quando chiedi informazioni di contatto, menziona gli orari di lavoro dell'azienda
+        - Fornisci sempre informazioni accurate sugli orari, sui contatti e sui servizi
+
+
+        Il tuo compito è aiutare i clienti a ottenere informazioni sui servizi, stimare costi e tempi approssimativi per lavori di ristrutturazione, e raccogliere le informazioni necessarie per un preventivo dettagliato. Quando un utente chiede un preventivo, cerca di ottenere: tipo di lavoro, metratura, ubicazione, e tempistiche desiderate. 
+
+        Rispondi sempre in modo professionale, cordiale e conciso, rappresentando al meglio l'immagine di Ristrutturazioni Morcianesi."""
+            })
+    
+    # Aggiungi la cronologia della chat
+    for msg in chat_history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    
+    # Aggiungi il messaggio dell'utente
+    messages.append({"role": "user", "content": user_message})
+    
+    # Torna a usare gpt-3.5-turbo che funziona sicuramente con OpenRouter
+    payload = {
+        "model": "openai/gpt-3.5-turbo",
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 500
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {app.config['OPENROUTER_API_KEY']}",
+        "HTTP-Referer": request.host_url,  # Richiesto da OpenRouter
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        response = requests.post(app.config['OPENROUTER_URL'], headers=headers, json=payload)
+        response.raise_for_status()  # Solleva un'eccezione in caso di errore HTTP
+        
+        result = response.json()
+        
+        # Debug - Aggiungi questo per vedere la struttura della risposta
+        print(f"Risposta API: {json.dumps(result, indent=2)}")
+        
+        # Gestione della risposta con verifica della struttura
+        if "choices" in result and len(result["choices"]) > 0:
+            if "message" in result["choices"][0] and "content" in result["choices"][0]["message"]:
+                ai_message = result["choices"][0]["message"]["content"]
+            else:
+                # Fallback per altri modelli con struttura diversa
+                ai_message = "Mi dispiace, ho avuto problemi a interpretare la risposta. Puoi riprovare con una domanda diversa?"
+                print(f"Struttura risposta inaspettata: {result}")
+        else:
+            ai_message = "Mi dispiace, ho ricevuto una risposta vuota dal modello. Riprova più tardi."
+        
+        return jsonify({
+            "success": True,
+            "message": ai_message
+        })
+    
+    except Exception as e:
+        print(f"Errore nella richiesta all'API: {str(e)}")
+        if response and hasattr(response, 'text'):
+            print(f"Risposta del server: {response.text}")
+        return jsonify({
+            "success": False,
+            "error": "Si è verificato un errore durante la comunicazione con l'assistente AI"
+        }), 500
+
+# =============== ROUTE PRINCIPALI DEL SITO ===============
+
+@app.route('/')
+def home():
+    """Pagina principale del sito."""
+    return render_template('home.html', title='Ristrutturazioni Morcianesi - Home')
+
+@app.route('/chat')
+def standalone_chat():
+    """Pagina dedicata per la chat preventivi."""
+    return render_template('chat.html', title='Chat Preventivi - Ristrutturazioni Morcianesi')
+
+@app.route('/chi-siamo')
+def about():
+    """Pagina Chi Siamo."""
+    return render_template('about.html', title='Chi Siamo - Ristrutturazioni Morcianesi')
+
+@app.route('/servizi')
+def services():
+    """Pagina dei servizi offerti."""
+    return render_template('services.html', title='Servizi - Ristrutturazioni Morcianesi')
+
+@app.route('/galleria')
+def gallery():
+    """Galleria dei lavori realizzati."""
+    return render_template('gallery.html', title='Galleria - Ristrutturazioni Morcianesi')
+
+@app.route('/contatti', methods=['GET', 'POST'])
+def contact():
+    """Pagina dei contatti con form di richiesta informazioni."""
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        message = request.form.get('message')
+        
+        # Validazione input
+        if not name or not email or not message:
+            flash('Per favore, completa tutti i campi obbligatori.', 'danger')
+            return render_template('contact.html', title='Contatti - Ristrutturazioni Morcianesi',
+                                  name_val=name, email_val=email, phone_val=phone, message_val=message)
+        
+        # Salva la richiesta nel database
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            'INSERT INTO contact_requests (name, email, phone, message, created_at) VALUES (?, ?, ?, ?, ?)',
+            (name, email, phone, message, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        )
+        db.commit()
+        
+        # Invia email di notifica agli amministratori
+        admin_email = app.config['EMAIL_USER']
+        subject = f'Nuova richiesta di contatto da {name}'
+        
+        html_content = f'''
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+                <h2 style="color: #1B9DD1;">Nuova richiesta di contatto</h2>
+                <p><strong>Nome:</strong> {name}</p>
+                <p><strong>Email:</strong> {email}</p>
+                <p><strong>Telefono:</strong> {phone or 'Non fornito'}</p>
+                <p><strong>Messaggio:</strong></p>
+                <p style="background-color: #f9f9f9; padding: 10px; border-radius: 5px;">{message}</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="font-size: 0.9em; color: #777;">Questa email è stata generata automaticamente dal sito Ristrutturazioni Morcianesi.</p>
+            </div>
+        </body>
+        </html>
+        '''
+        
+        send_email(admin_email, subject, html_content)
+        
+        # Invia email di conferma al cliente
+        client_subject = 'Abbiamo ricevuto la tua richiesta - Ristrutturazioni Morcianesi'
+        
+        client_html_content = f'''
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+                <h2 style="color: #1B9DD1;">Grazie per averci contattato!</h2>
+                <p>Gentile {name},</p>
+                <p>Abbiamo ricevuto la tua richiesta e ti ringraziamo per averci contattato.</p>
+                <p>Un nostro operatore ti risponderà il prima possibile all'indirizzo email {email}.</p>
+                <p>Ecco un riepilogo della tua richiesta:</p>
+                <p style="background-color: #f9f9f9; padding: 10px; border-radius: 5px;">{message}</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="font-size: 0.9em; color: #777;">Cordiali saluti,<br>Il team di Ristrutturazioni Morcianesi</p>
+            </div>
+        </body>
+        </html>
+        '''
+        
+        send_email(email, client_subject, client_html_content)
+        
+        flash('Grazie per il tuo messaggio! Ti risponderemo al più presto.', 'success')
+        return redirect(url_for('contact'))
+        
+    return render_template('contact.html', title='Contatti - Ristrutturazioni Morcianesi')
+
+@app.route('/preventivo', methods=['GET', 'POST'])
+def quote():
+    """Pagina per la richiesta di un preventivo."""
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        address = request.form.get('address')
+        service_type = request.form.get('service_type')
+        area = request.form.get('area')
+        details = request.form.get('details')
+        
+        # Validazione input
+        if not name or not email or not phone or not service_type:
+            flash('Per favore, completa tutti i campi obbligatori.', 'danger')
+            return render_template('quote.html', title='Richiedi Preventivo - Ristrutturazioni Morcianesi')
+        
+        # Salva la richiesta di preventivo nel database
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            'INSERT INTO quote_requests (name, email, phone, address, service_type, area, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            (name, email, phone, address, service_type, area, details, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        )
+        db.commit()
+        
+        # Invia email di notifica agli amministratori
+        admin_email = app.config['EMAIL_USER']
+        subject = f'Nuova richiesta di preventivo da {name}'
+        
+        html_content = f'''
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+                <h2 style="color: #1B9DD1;">Nuova richiesta di preventivo</h2>
+                <p><strong>Nome:</strong> {name}</p>
+                <p><strong>Email:</strong> {email}</p>
+                <p><strong>Telefono:</strong> {phone}</p>
+                <p><strong>Indirizzo:</strong> {address or 'Non fornito'}</p>
+                <p><strong>Tipo di servizio:</strong> {service_type}</p>
+                <p><strong>Metratura:</strong> {area or 'Non fornita'} mq</p>
+                <p><strong>Dettagli aggiuntivi:</strong></p>
+                <p style="background-color: #f9f9f9; padding: 10px; border-radius: 5px;">{details or 'Nessun dettaglio fornito'}</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="font-size: 0.9em; color: #777;">Questa email è stata generata automaticamente dal sito Ristrutturazioni Morcianesi.</p>
+            </div>
+        </body>
+        </html>
+        '''
+        
+        send_email(admin_email, subject, html_content)
+        
+        # Invia email di conferma al cliente
+        client_subject = 'Richiesta di preventivo ricevuta - Ristrutturazioni Morcianesi'
+        
+        client_html_content = f'''
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+                <h2 style="color: #1B9DD1;">Grazie per la tua richiesta di preventivo!</h2>
+                <p>Gentile {name},</p>
+                <p>Abbiamo ricevuto la tua richiesta di preventivo e ti ringraziamo per averci scelto.</p>
+                <p>Un nostro tecnico valuterà la tua richiesta e ti contatterà entro 48 ore lavorative per un preventivo dettagliato.</p>
+                <p>Ecco un riepilogo della tua richiesta:</p>
+                <ul>
+                    <li><strong>Tipo di servizio:</strong> {service_type}</li>
+                    <li><strong>Metratura:</strong> {area or 'Non fornita'} mq</li>
+                    <li><strong>Indirizzo:</strong> {address or 'Non fornito'}</li>
+                </ul>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="font-size: 0.9em; color: #777;">Cordiali saluti,<br>Il team di Ristrutturazioni Morcianesi</p>
+            </div>
+        </body>
+        </html>
+        '''
+        
+        send_email(email, client_subject, client_html_content)
+        
+        flash('Grazie per la richiesta di preventivo! Ti contatteremo il prima possibile.', 'success')
+        return redirect(url_for('quote'))
+        
+    return render_template('quote.html', title='Richiedi Preventivo - Ristrutturazioni Morcianesi')
+
+# =============== PAGINE DI ERRORE PERSONALIZZATE ===============
+
+@app.errorhandler(404)
+def page_not_found(e):
+    """Gestione errore 404: Pagina non trovata."""
+    return render_template('errors/404.html', title='Pagina non trovata'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    """Gestione errore 500: Errore interno del server."""
+    return render_template('errors/500.html', title='Errore del server'), 500
+
+# =============== AVVIO APPLICAZIONE ===============
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=app.config['DEBUG'])

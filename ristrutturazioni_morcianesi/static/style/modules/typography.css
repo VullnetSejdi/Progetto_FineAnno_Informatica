@@ -1,0 +1,48 @@
+/*---------------------------------------
+  TIPOGRAFIA
+----------------------------------------*/
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-primary);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    color: var(--primary-dark);
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
+
+p {
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+    font-family: var(--font-primary);
+}
+
+a {
+    font-family: var(--font-primary);
+}
+
+/* Stili specifici per elementi testuali */
+.section-tag {
+    display: inline-block;
+    background-color: rgba(27, 157, 209, 0.2);
+    color: var(--primary);
+    padding: 5px 15px;
+    border-radius: 30px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+}
+
+.title-underline {
+    height: 4px;
+    width: 60px;
+    background: var(--primary);
+    margin: 0 auto;
+}

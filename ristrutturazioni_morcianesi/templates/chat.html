@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Chat Preventivi - Ristrutturazioni Morcianesi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" type="image/x-icon">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f8f9fa;
+        }
+        
+        .standalone-chat {
+            width: 100%;
+            height: 100vh;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .chat-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+        
+        .chat-return-link {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .chat-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            padding: 15px 0;
+            border-top: 1px solid #eee;
+        }
+        
+        .chat-input {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 15px;
+            resize: none;
+            height: 55px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        
+        .chat-send {
+            width: 55px;
+            height: 55px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="standalone-chat">
+        <div class="chat-header">
+            <a href="{{ url_for('home') }}" class="chat-return-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Torna al sito</span>
+            </a>
+            <h2>Preventivo Rapido</h2>
+            <div></div><!-- Elemento vuoto per mantenere il layout con space-between -->
+        </div>
+        <div class="chat-body">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-container">
+                <textarea class="chat-input" id="chatInput" placeholder="Scrivi qui..."></textarea>
+                <button class="chat-send" id="chatSend"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verifica se questa pagina è stata aperta come popup dalla chat principale
+        const isPopup = window.opener && !window.opener.closed;
+        let chatHistory = [];
+        
+        // Se è un popup, prova a recuperare la cronologia dalla finestra principale
+        if (isPopup && window.opener.chatHistory) {
+            try {
+                chatHistory = [...window.opener.chatHistory];
+                // Ricostruisce la chat precedente
+                for (let msg of chatHistory) {
+                    addMessage(msg.content, msg.role === 'user' ? 'sent' : 'received');
+                }
+            } catch (error) {
+                console.error('Errore nel recupero della cronologia:', error);
+            }
+        }
+        
+        // Aggiungiamo il messaggio di benvenuto solo se è la prima apertura
+        if (document.getElementById('chatMessages').children.length === 0) {
+            addMessage("Ciao! Sono l'assistente virtuale di Ristrutturazioni Morcianesi. Come posso aiutarti con il tuo preventivo?", 'received');
+        }
+        
+        document.getElementById('chatSend').addEventListener('click', sendMessage);
+        
+        document.getElementById('chatInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            if (message) {
+                // Aggiungi messaggio dell'utente
+                addMessage(message, 'sent');
+                chatInput.value = '';
+                chatInput.disabled = true;
+                
+                // Aggiungi l'indicatore di digitazione
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'typing-indicator';
+                typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+                document.getElementById('chatMessages').appendChild(typingIndicator);
+                document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+                
+                // Aggiorna la cronologia della chat
+                chatHistory.push({
+                    "role": "user",
+                    "content": message
+                });
+                
+                // Crea un token CSRF per la richiesta
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // Invia al backend
+                fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        history: chatHistory.slice(-10) // Invia solo gli ultimi 10 messaggi
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Rimuovi l'indicatore di digitazione
+                    const indicator = document.querySelector('.typing-indicator');
+                    if (indicator) {
+                        indicator.remove();
+                    }
+                    
+                    chatInput.disabled = false;
+                    
+                    if (data.success) {
+                        addMessage(data.message, 'received');
+                        
+                        // Aggiorna la cronologia della chat
+                        chatHistory.push({
+                            "role": "assistant",
+                            "content": data.message
+                        });
+                        
+                        // Se è un popup, aggiorna anche la cronologia nella finestra principale
+                        if (isPopup && window.opener.updateChatHistory) {
+                            try {
+                                window.opener.updateChatHistory(chatHistory);
+                            } catch (error) {
+                                console.error('Errore nell\'aggiornamento della cronologia:', error);
+                            }
+                        }
+                    } else {
+                        addMessage("Mi dispiace, si è verificato un errore. Riprova più tardi.", 'received error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    
+                    // Rimuovi l'indicatore di digitazione
+                    const indicator = document.querySelector('.typing-indicator');
+                    if (indicator) {
+                        indicator.remove();
+                    }
+                    
+                    chatInput.disabled = false;
+                    addMessage("Mi dispiace, non riesco a connettermi al server. Riprova più tardi.", 'received error');
+                });
+            }
+        }
+        
+        function addMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            // Formatta il testo con supporto per markdown semplice
+            let formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // bold
+                .replace(/\*(.*?)\*/g, '<em>$1</em>') // italic
+                .replace(/\n/g, '<br>'); // line breaks
+            
+            contentDiv.innerHTML = formattedText;
+            messageDiv.appendChild(contentDiv);
+            document.getElementById('chatMessages').appendChild(messageDiv);
+            
+            // Scroll to bottom
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        }
+    </script>
+</body>
+</html>

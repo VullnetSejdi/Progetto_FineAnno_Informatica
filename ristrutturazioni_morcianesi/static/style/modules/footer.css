@@ -1,0 +1,315 @@
+/*---------------------------------------
+  FOOTER PRINCIPALE - DESIGN ELEGANTE  
+----------------------------------------*/
+.buttombar {
+    background-color: #0b1a25;
+    background-image: linear-gradient(to bottom, #0d202e, #0b1a25);
+    color: #ffffff;
+    padding: 80px 0 30px;
+    width: 100%;
+    position: relative;
+    box-shadow: inset 0 15px 15px -15px rgba(0,0,0,0.3);
+}
+
+/* Linea decorativa superiore */
+.buttombar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(to right, rgba(27, 157, 209, 0), var(--primary), rgba(27, 157, 209, 0));
+}
+
+.buttombar-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 30px;
+    gap: 50px;
+}
+
+.buttombar-section {
+    flex: 1;
+    min-width: 220px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: relative;
+}
+
+/* Titoli sezioni con accento */
+.buttombar-section h3 {
+    color: #ffffff;
+    font-size: 1.15rem;
+    margin-bottom: 30px;
+    position: relative;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.buttombar-section h3::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 35px;
+    height: 2px;
+    background-color: var(--primary);
+    transition: width 0.3s ease;
+}
+
+.buttombar-section:hover h3::after {
+    width: 50px;
+}
+
+/* Info aziendali */
+.company-info {
+    margin-top: 10px;
+}
+
+.company-tagline {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #ffffff;
+    background: linear-gradient(45deg, #ffffff, #e6e6e6);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.company-subtitle {
+    font-size: 1rem;
+    color: #ffffff;
+    margin-bottom: 12px;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+/* Liste link */
+.buttombar-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+}
+
+.buttombar-links li {
+    margin: 0;
+    color: #ffffff;
+    font-size: 0.95rem;
+    opacity: 0.8;
+    position: relative;
+    transition: transform 0.2s ease;
+}
+
+.buttombar-links a {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.25s ease;
+    opacity: 0.8;
+    display: inline-block;
+    padding: 2px 0;
+    position: relative;
+}
+
+.buttombar-links a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--primary);
+    transition: width 0.3s ease;
+}
+
+.buttombar-links a:hover {
+    opacity: 1;
+    color: var(--primary);
+    transform: translateX(5px);
+}
+
+.buttombar-links a:hover::after {
+    width: 100%;
+}
+
+/* Sezione social */
+.buttombar-social {
+    max-width: 1200px;
+    margin: 30px auto 0;
+    padding: 35px 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+}
+
+.buttombar-social::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 2px;
+    background: var(--primary);
+}
+
+.buttombar-social h3 {
+    color: #ffffff;
+    font-size: 1.15rem;
+    margin-bottom: 22px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    position: relative;
+    display: inline-block;
+}
+
+.social-icons {
+    display: flex;
+    gap: 20px;
+}
+
+.social-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+}
+
+.social-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--primary);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+
+.social-icon:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.social-icon:hover::before {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.social-icon img {
+    width: 22px;
+    height: 22px;
+    opacity: 0.9;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.3s ease;
+}
+
+.social-icon:hover img {
+    transform: scale(1.1);
+}
+
+/* Copyright */
+.buttombar-copyright {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 25px 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: left;
+}
+
+.buttombar-copyright p {
+    color: #ffffff;
+    font-size: 0.85rem;
+    margin: 0;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+}
+
+.buttombar-copyright p:hover {
+    opacity: 0.8;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .buttombar {
+        padding: 60px 0 30px;
+    }
+    
+    .buttombar-container {
+        gap: 40px;
+    }
+    
+    .company-tagline {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .buttombar {
+        padding: 50px 0 20px;
+    }
+    
+    .buttombar-container {
+        flex-direction: column;
+        padding: 0 25px;
+        gap: 35px;
+    }
+    
+    .buttombar-section {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    .buttombar-section h3 {
+        margin-bottom: 25px;
+    }
+    
+    .buttombar-section h3::after {
+        width: 40px;
+    }
+    
+    .company-tagline {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .buttombar {
+        padding: 40px 0 20px;
+    }
+    
+    .buttombar-section h3 {
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+    
+    .company-tagline {
+        font-size: 1.4rem;
+    }
+    
+    .social-icon {
+        width: 38px;
+        height: 38px;
+    }
+}

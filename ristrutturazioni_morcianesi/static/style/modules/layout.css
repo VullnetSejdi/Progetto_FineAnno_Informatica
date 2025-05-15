@@ -1,0 +1,69 @@
+/*---------------------------------------
+  LAYOUT DI BASE
+----------------------------------------*/
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* Layout principale per sezioni di contenuto */
+.extra-content {
+    background: var(--light-gray);
+    padding: 5rem 0;
+    text-align: center;
+}
+
+.extra-content h2 {
+    font-size: 2.5rem;
+    color: var(--primary-dark);
+    margin-bottom: 2rem;
+}
+
+.extra-content p {
+    font-size: 1.2rem;
+    color: var(--text);
+    max-width: 800px;
+    margin: 0 auto 2rem;
+}
+
+/* Griglia servizi */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.service-card {
+    background-color: white;
+    border-radius: var(--radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.service-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-hover);
+}
+
+.service-icon {
+    font-size: 3rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+.service-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--secondary);
+}
+
+.service-description {
+    color: var(--text);
+    font-size: 1rem;
+}

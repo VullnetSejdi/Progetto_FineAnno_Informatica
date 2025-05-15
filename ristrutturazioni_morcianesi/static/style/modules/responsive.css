@@ -1,0 +1,291 @@
+/*---------------------------------------
+  MEDIA QUERIES
+----------------------------------------*/
+@media (max-width: 992px) {
+    /* Riduci dimensioni testo */
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.3rem; }
+    h4 { font-size: 1.2rem; }
+    h5 { font-size: 1rem; }
+    h6 { font-size: 0.8rem; }
+    
+    p { 
+        font-size: 0.8rem;
+        margin-bottom: 0.8rem;
+        line-height: 1.4;
+    }
+    
+    /* Riduci dimensioni navbar */
+    .navbar nav a {
+        font-size: 0.7rem;
+        letter-spacing: 0;
+        gap: 0.5rem;
+    }
+
+    .navbar nav a[href*="chi-siamo"] {
+        white-space: nowrap;
+    }
+    
+    .nav-link.highlight {
+        font-size: 0.65rem !important;
+        padding: 0.25rem 0.5rem !important;
+    }
+    
+    /* Riduci testo nelle sezioni */
+    .parallax-content h2 {
+        font-size: 2.2rem;
+    }
+    
+    .parallax-content p {
+        font-size: 1.1rem;
+    }
+    
+    .extra-content h2 {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+    }
+    
+    .extra-content p {
+        font-size: 0.9rem;
+        margin: 0 auto 1rem;
+    }
+    
+    .service-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .service-description {
+        font-size: 0.8rem;
+    }
+    
+    .btn {
+        font-size: 0.9rem;
+        padding: 0.6rem 1.4rem;
+        margin: 0.3rem;
+    }
+    
+    /* Spazi ridotti ulteriormente */
+    .services-grid {
+        gap: 0.8rem;
+    }
+    
+    .service-card {
+        padding: 1rem;
+    }
+    
+    .service-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* About section */
+    .about-section {
+        padding: 80px 0;
+    }
+    
+    .about-title {
+        font-size: 2.3rem;
+    }
+    
+    .about-content {
+        flex-direction: column;
+        gap: 60px;
+    }
+    
+    .about-image-area, .about-text-area {
+        flex: none;
+        width: 100%;
+    }
+    
+    .experience-counter {
+        bottom: -25px;
+        right: 25px;
+        padding: 15px 25px;
+    }
+    
+    /* Mission section */
+    .mission-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .mission-image-wrapper {
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    
+    /* Footer */
+    .buttombar-container {
+        gap: 20px;
+    }
+    
+    .buttombar-section {
+        padding-right: 15px;
+    }
+    
+    .company-tagline {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Header e navbar */
+    .hamburger {
+        display: flex;
+    }
+    
+    .navbar nav {
+        position: fixed;
+        top: 60px;
+        right: -100%;
+        flex-direction: column;
+        background: var(--dark);
+        width: 80%;
+        height: calc(100vh - 60px);
+        padding: 20px;
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .navbar nav.active {
+        right: 0;
+    }
+    
+    .navbar nav a {
+        margin: 10px 0;
+        font-size: 1rem;
+    }
+    
+    /* Sezione hero */
+    .parallax-content {
+        padding: 20px;
+    }
+    
+    .parallax-content h2 {
+        font-size: 1.8rem;
+    }
+    
+    .parallax-content p {
+        font-size: 1rem;
+    }
+    
+    /* About section */
+    .about-container {
+        padding: 0 20px;
+    }
+    
+    .values-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .value-card {
+        margin-bottom: 20px;
+    }
+    
+    /* Servizi */
+    .services-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+    
+    /* Footer */
+    .buttombar-container {
+        flex-direction: column;
+    }
+    
+    .buttombar-section {
+        width: 100%;
+        padding-right: 0;
+        margin-bottom: 30px;
+    }
+    
+    .buttombar-social, .buttombar-copyright {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    
+    /* Form */
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-group {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Header */
+    .info-bar {
+        flex-direction: column;
+        align-items: center;
+        padding: 8px;
+    }
+    
+    .info-bar-left, .info-bar-right {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .info-bar-text {
+        display: none;
+    }
+    
+    /* Hero section */
+    .parallax-content h2 {
+        font-size: 1.5rem;
+    }
+    
+    .parallax-content p {
+        font-size: 0.9rem;
+    }
+    
+    /* About */
+    .about-title {
+        font-size: 1.8rem;
+    }
+    
+    .section-tag {
+        font-size: 0.7rem;
+        padding: 3px 10px;
+    }
+    
+    .experience-counter {
+        right: 50%;
+        transform: translateX(50%);
+        bottom: -40px;
+    }
+    
+    .counter-number {
+        font-size: 2rem;
+    }
+    
+    .counter-text {
+        font-size: 0.8rem;
+    }
+    
+    /* Buttons */
+    .btn {
+        width: 100%;
+        text-align: center;
+        margin: 5px 0;
+    }
+    
+    /* Gallery */
+    .gallery-filter button {
+        padding: 5px 8px;
+        font-size: 0.7rem;
+        margin: 0 2px;
+    }
+    
+    /* Footer */
+    .company-tagline {
+        font-size: 1.2rem;
+    }
+    
+    .buttombar {
+        padding: 40px 0 20px;
+    }
+}
