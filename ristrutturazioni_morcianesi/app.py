@@ -32,7 +32,7 @@ app.config.update(
     EMAIL_PORT=587,
     EMAIL_USER='ristruttura.morcianesi.verifica@gmail.com',
     EMAIL_PASSWORD='mgtcrlketbprtoin',
-    OPENROUTER_API_KEY="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",
+    OPENROUTER_API_KEY="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",
     OPENROUTER_URL="https://openrouter.ai/api/v1/chat/completions",
     DEBUG=True
 )
