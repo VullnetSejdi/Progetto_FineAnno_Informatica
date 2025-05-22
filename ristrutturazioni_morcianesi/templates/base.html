@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/style_chat.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     {% block extra_css %}{% endblock %}
     <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" type="image/x-icon">
@@ -40,7 +41,7 @@
             <a href="{{ url_for('services') }}" {% if request.endpoint == 'services' %}class="active"{% endif %}>SERVIZI</a>
             <a href="{{ url_for('gallery') }}" {% if request.endpoint == 'gallery' %}class="active"{% endif %}>GALLERIA</a>
             <a href="{{ url_for('contact') }}" {% if request.endpoint == 'contact' %}class="active"{% endif %}>CONTATTI</a>
-            <a class="nav-link highlight" href="{{ url_for('quote') }}" {% if request.endpoint == 'quote' %}class="active"{% endif %}>
+            <a class="nav-link highlight" href="{{ url_for('preventivo_form') }}" {% if request.endpoint == 'preventivo_form' %}class="active"{% endif %}>
                 <i class="fas fa-calculator" style="margin-right: 6px;"></i>PREVENTIVO</a>
             {% if logged_in_user %}
             <a href="#" class="nav-auth-icon-link" title="Account" id="user-account-icon">
@@ -50,6 +51,9 @@
                 </div>
             </a>
             <div class="user-dropdown">
+                {% if logged_in_user.role == 'admin' %}
+                <a href="{{ url_for('admin_preventivi') }}" class="dropdown-item">GESTIONE PREVENTIVI</a>
+                {% endif %}
                 <a href="{{ url_for('logout') }}" class="dropdown-item">LOGOUT</a>
             </div>
             {% else %}
@@ -128,7 +132,7 @@
         </div>
     </footer>
 
-        <!-- Chat Button per preventivi -->
+    <!-- Chat Button per preventivi -->
     <div class="chat-button" id="chatButton">
         <div class="chat-button-inner">
             <i class="fas fa-calculator"></i>
@@ -141,8 +145,18 @@
         <div class="chat-header">
             <h3>Assistente Preventivi</h3>
             <div class="chat-controls">
-                <button class="chat-expand" id="chatExpand" title="Apri in nuova finestra"><i class="fas fa-external-link-alt"></i></button>
-                <button class="chat-close" id="chatClose" title="Chiudi"><i class="fas fa-times"></i></button>
+                {% if logged_in_user %}
+                <button class="chat-saved-toggle" id="chatSavedToggle" title="Conversazioni salvate">
+                    <i class="fas fa-history"></i>
+                    <span class="chat-btn-text">Chat salvate</span>
+                </button>
+                {% endif %}
+                <button class="chat-expand-btn" id="chatExpandBtn" data-action="expand" title="Espandi chat">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+                <button class="chat-close" id="chatClose" title="Chiudi">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </div>
         
@@ -172,6 +186,7 @@
     <!-- Scripts -->
     <script src="{{ url_for('static', filename='script/scroll_effect.js') }}" defer></script>
     <script src="{{ url_for('static', filename='script/chat.js') }}"></script>
+    <script src="{{ url_for('static', filename='script/chat_expand.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

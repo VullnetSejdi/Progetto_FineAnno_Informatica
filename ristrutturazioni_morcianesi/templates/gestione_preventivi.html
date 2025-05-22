@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestione Preventivi - Ristrutturazioni Morcianesi{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/modules/layout.css') }}">
+<style>
+    .preventivi-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 1.5rem;
+        background-color: #fff;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+
+    .preventivo-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+    }
+
+    .preventivo-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .preventivo-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .preventivo-stato {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .stato-nuovo {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .stato-risposto {
+        background-color: #e8f5e9;
+        color: #388e3c;
+    }
+
+    .stato-in-lavorazione {
+        background-color: #fff8e1;
+        color: #ffa000;
+    }
+
+    .preventivo-info {
+        margin-bottom: 1.5rem;
+    }
+
+    .preventivo-info div {
+        margin-bottom: 0.5rem;
+    }
+
+    .preventivo-descrizione {
+        background-color: #f9f9f9;
+        padding: 1rem;
+        border-radius: 5px;
+        margin-bottom: 1.5rem;
+    }
+
+    .preventivo-foto {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+
+    .preventivo-foto img {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .risposta-form {
+        background-color: #f5f5f5;
+        padding: 1rem;
+        border-radius: 5px;
+    }
+
+    .risposta-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        resize: vertical;
+        min-height: 150px;
+        margin-bottom: 1rem;
+    }
+
+    .risposta-btn {
+        background-color: #1B9DD1;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background-color 0.3s ease;
+    }
+
+    .risposta-btn:hover {
+        background-color: #0d8bbf;
+    }
+
+    .risposta-esistente {
+        background-color: #e8f5e9;
+        padding: 1rem;
+        border-radius: 5px;
+        margin-top: 1.5rem;
+        position: relative;
+    }
+
+    .risposta-data {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 0.5rem;
+    }
+
+    .tabs {
+        display: flex;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .tab {
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        font-weight: 600;
+        border-bottom: 2px solid transparent;
+    }
+
+    .tab.active {
+        border-bottom: 2px solid #1B9DD1;
+        color: #1B9DD1;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.7);
+    }
+
+    .modal-content {
+        position: relative;
+        margin: auto;
+        padding: 0;
+        width: 90%;
+        max-width: 1200px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .close {
+        position: absolute;
+        top: 15px;
+        right: 25px;
+        font-size: 35px;
+        font-weight: bold;
+        color: white;
+        cursor: pointer;
+    }
+
+    .modal-img {
+        display: block;
+        max-width: 100%;
+        max-height: 90vh;
+        margin: auto;
+    }
+
+    #prev, #next {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 16px;
+        color: white;
+        font-weight: bold;
+        font-size: 20px;
+        transition: 0.6s ease;
+        border-radius: 0 3px 3px 0;
+        user-select: none;
+        cursor: pointer;
+        background-color: rgba(0,0,0,0.3);
+    }
+
+    #next {
+        right: 0;
+        border-radius: 3px 0 0 3px;
+    }
+
+    #prev:hover, #next:hover {
+        background-color: rgba(0,0,0,0.8);
+    }
+
+    .no-preventivi {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+        font-size: 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="preventivi-container">
+    <h1>Gestione Preventivi</h1>
+    <p>Qui puoi visualizzare e rispondere ai preventivi richiesti dai clienti.</p>
+
+    <div class="tabs">
+        <div class="tab active" data-filter="all">Tutti</div>
+        <div class="tab" data-filter="Nuovo">Nuovi</div>
+        <div class="tab" data-filter="In lavorazione">In lavorazione</div>
+        <div class="tab" data-filter="Risposto">Risposti</div>
+    </div>
+
+    {% if preventivi %}
+        {% for preventivo in preventivi %}
+        <div class="preventivo-card" data-stato="{{ preventivo.stato }}">
+            <div class="preventivo-header">
+                <h3>Preventivo #{{ preventivo.id }}</h3>
+                <span class="preventivo-stato stato-{{ preventivo.stato.lower().replace(' ', '-') }}">{{ preventivo.stato }}</span>
+            </div>
+
+            <div class="preventivo-info">
+                <div><strong>Nome:</strong> {{ preventivo.nome }}</div>
+                <div><strong>Email:</strong> {{ preventivo.email }}</div>
+                <div><strong>Telefono:</strong> {{ preventivo.telefono }}</div>
+                <div><strong>Indirizzo:</strong> {{ preventivo.indirizzo }}</div>
+                <div><strong>Tipologia:</strong> {{ preventivo.tipologia }}</div>
+                <div><strong>Data richiesta:</strong> {{ preventivo.data_richiesta }}</div>
+            </div>
+
+            <div class="preventivo-descrizione">
+                <strong>Descrizione:</strong>
+                <p>{{ preventivo.descrizione }}</p>
+            </div>
+
+            {% if preventivo.foto_paths %}
+            <div class="preventivo-foto">
+                {% for foto in preventivo.foto_paths %}
+                <img src="{{ url_for('static', filename=foto) }}" alt="Foto del progetto" onclick="apriModaleFoto('{{ url_for('static', filename=foto) }}', {{ loop.index0 }}, {{ preventivo.id }})">
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if preventivo.risposta %}
+            <div class="risposta-esistente">
+                <strong>La tua risposta:</strong>
+                <p>{{ preventivo.risposta }}</p>
+                <div class="risposta-data">Risposto il: {{ preventivo.data_risposta }}</div>
+            </div>
+            {% else %}
+            <div class="risposta-form">
+                <h4>Rispondi al preventivo</h4>
+                <form id="form-risposta-{{ preventivo.id }}" action="{{ url_for('rispondi_preventivo', preventivo_id=preventivo.id) }}" method="post">
+                    <textarea class="risposta-input" name="risposta" placeholder="Scrivi qui la tua risposta al preventivo..." required></textarea>
+                    <button type="submit" class="risposta-btn">Invia risposta</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <div class="cambia-stato">
+                <form id="form-stato-{{ preventivo.id }}" action="{{ url_for('cambia_stato_preventivo', preventivo_id=preventivo.id) }}" method="post">
+                    <label for="stato-{{ preventivo.id }}">Cambia stato:</label>
+                    <select id="stato-{{ preventivo.id }}" name="stato">
+                        <option value="Nuovo" {% if preventivo.stato == 'Nuovo' %}selected{% endif %}>Nuovo</option>
+                        <option value="In lavorazione" {% if preventivo.stato == 'In lavorazione' %}selected{% endif %}>In lavorazione</option>
+                        <option value="Risposto" {% if preventivo.stato == 'Risposto' %}selected{% endif %}>Risposto</option>
+                    </select>
+                    <button type="submit" class="risposta-btn">Aggiorna</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Modale per visualizzare le foto in grande -->
+        <div id="modal-foto" class="modal">
+            <span class="close" onclick="chiudiModaleFoto()">&times;</span>
+            <a id="prev" onclick="cambiaFoto(-1)">&#10094;</a>
+            <a id="next" onclick="cambiaFoto(1)">&#10095;</a>
+            <div class="modal-content">
+                <img id="modal-img" class="modal-img">
+            </div>
+        </div>
+    {% else %}
+        <div class="no-preventivi">
+            <p>Non ci sono preventivi da visualizzare.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    // Gestione dei tab per filtrare i preventivi
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Rimuovi la classe attiva da tutti i tab
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            // Aggiungi la classe attiva al tab cliccato
+            this.classList.add('active');
+            
+            const filtro = this.getAttribute('data-filter');
+            
+            // Filtra le card dei preventivi
+            document.querySelectorAll('.preventivo-card').forEach(card => {
+                if (filtro === 'all' || card.getAttribute('data-stato') === filtro) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // Variabili per la gestione della modale delle foto
+    let currentPreventivoId = null;
+    let currentFotoIndex = 0;
+    let fotoArray = [];
+
+    // Funzione per aprire la modale delle foto
+    function apriModaleFoto(src, index, preventivoId) {
+        const modal = document.getElementById('modal-foto');
+        const modalImg = document.getElementById('modal-img');
+        
+        modal.style.display = 'block';
+        modalImg.src = src;
+        
+        // Se è un nuovo preventivo, inizializza l'array delle foto
+        if (currentPreventivoId !== preventivoId) {
+            currentPreventivoId = preventivoId;
+            fotoArray = [];
+            
+            // Raccogli tutte le foto del preventivo corrente
+            document.querySelectorAll(`.preventivo-card[data-id="${preventivoId}"] .preventivo-foto img`).forEach(img => {
+                fotoArray.push(img.src);
+            });
+        }
+        
+        currentFotoIndex = index;
+    }
+
+    // Funzione per chiudere la modale delle foto
+    function chiudiModaleFoto() {
+        document.getElementById('modal-foto').style.display = 'none';
+    }
+
+    // Funzione per cambiare la foto nella modale
+    function cambiaFoto(direzione) {
+        currentFotoIndex += direzione;
+        
+        // Cicla attraverso l'array delle foto
+        if (currentFotoIndex >= fotoArray.length) {
+            currentFotoIndex = 0;
+        } else if (currentFotoIndex < 0) {
+            currentFotoIndex = fotoArray.length - 1;
+        }
+        
+        document.getElementById('modal-img').src = fotoArray[currentFotoIndex];
+    }
+
+    // Chiudi la modale quando si clicca fuori dall'immagine
+    window.onclick = function(event) {
+        const modal = document.getElementById('modal-foto');
+        if (event.target === modal) {
+            chiudiModaleFoto();
+        }
+    };
+</script>
+{% endblock %}

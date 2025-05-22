@@ -1,55 +1,92 @@
-/* Stile per le pagine di login e registrazione */
+/* Tema chiaro e scuro */
+:root {
+    --background-color: #f5f5f5;
+    --box-background: #ffffff;
+    --text-color: #333;
+    --input-border: #ddd;
+    --input-focus-border: #4a90e2;
+    --button-background: #4a90e2;
+    --button-hover-background: #3a7bc8;
+    --link-color: #4a90e2;
+    --alert-danger-background: #f8d7da;
+    --alert-danger-border: #f5c6cb;
+    --alert-danger-text: #721c24;
+}
 
+[data-theme="dark"] {
+    --background-color: #0a1a2f; /* Blu scuro */
+    --box-background: #112240; /* Blu scuro leggermente più chiaro */
+    --text-color: #ffffff;
+    --input-border: #1c3a5b;
+    --input-focus-border: #4a90e2;
+    --button-background: #1a73e8;
+    --button-hover-background: #1666c1;
+    --link-color: #8ab4f8;
+    --alert-danger-background: #5f2124;
+    --alert-danger-border: #7d2c31;
+    --alert-danger-text: #f28b82;
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+/* Stile aggiornato per il login in stile GitHub */
 .auth-container {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 100px 20px 50px;
-    background-color: #f5f5f5;
+    padding: 20px;
+    background-color: var(--background-color);
 }
 
 .auth-box {
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-    padding: 30px;
+    background-color: var(--box-background);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    padding: 40px;
     width: 100%;
-    max-width: 480px;
-    transition: all 0.3s ease;
+    max-width: 360px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
 }
 
 .auth-box h2 {
-    color: #333;
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 28px;
+    color: var(--text-color);
+    font-size: 24px;
+    margin-bottom: 20px;
+    font-weight: 600;
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+    text-align: left;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-color);
     font-weight: 500;
-    color: #555;
 }
 
 .form-group input {
     width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 16px;
-    transition: border 0.3s;
+    padding: 10px;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: var(--box-background);
+    color: var(--text-color);
 }
 
 .form-group input:focus {
-    border-color: #4a90e2;
+    border-color: var(--input-focus-border);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3);
 }
 
 .password-container {
@@ -78,29 +115,29 @@
 .btn {
     display: block;
     width: 100%;
-    padding: 14px;
-    background-color: #4a90e2;
-    color: white;
+    padding: 10px;
+    background-color: var(--button-background);
+    color: var(--button-text-color);
     border: none;
-    border-radius: 5px;
-    font-size: 16px;
+    border-radius: 4px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.3s;
 }
 
 .btn:hover {
-    background-color: #3a7bc8;
+    background-color: var(--button-hover-background);
 }
 
 .form-footer {
-    margin-top: 25px;
-    text-align: center;
-    color: #666;
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--text-color);
 }
 
 .form-footer a {
-    color: #4a90e2;
+    color: var(--link-color);
     text-decoration: none;
 }
 
@@ -116,9 +153,9 @@
 }
 
 .alert-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: var(--alert-danger-background);
+    color: var(--alert-danger-text);
+    border: 1px solid var(--alert-danger-border);
 }
 
 .password-strength {
@@ -137,6 +174,39 @@
     color: #888;
     font-size: 12px;
     margin: 0;
+}
+
+/* Stile per il logo sopra il contenitore di autenticazione */
+.logo-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.logo-container img {
+    max-width: 150px;
+    height: auto;
+}
+
+/* Stile per la sezione "Accedi" fuori dal riquadro */
+.access-section {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+/* Stile per il link "Password dimenticata?" accanto al campo password */
+.forgot-password-link {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: 14px;
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+.forgot-password-link:hover {
+    text-decoration: underline;
 }
 
 /* Responsive */

@@ -11,16 +11,49 @@ import secrets
 import sqlite3
 import requests
 import json
+import time
 from datetime import datetime, timedelta
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, 
     session, g, jsonify, current_app
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect
+from flask_mail import Mail, Message
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import smtplib
+from functools import wraps
+
+# =============== DECORATORI PER L'AUTENTICAZIONE ===============
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login', next=request.url))
+        
+        # Verifica se l'utente è un admin
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],))
+        user_data = cursor.fetchone()
+        
+        if not user_data or user_data['role'] != 'admin':
+            flash('Accesso non autorizzato. Solo gli amministratori possono visualizzare questa pagina.', 'danger')
+            return redirect(url_for('home'))
+            
+        return f(*args, **kwargs)
+    return decorated_function
 
 # =============== CONFIGURAZIONE DELL'APPLICAZIONE ===============
 
@@ -34,10 +67,19 @@ app.config.update(
     EMAIL_PASSWORD='mgtcrlketbprtoin',
     OPENROUTER_API_KEY="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",
     OPENROUTER_URL="https://openrouter.ai/api/v1/chat/completions",
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USE_SSL=False,
+    MAIL_USERNAME='ristruttura.morcianesi.verifica@gmail.com',
+    MAIL_PASSWORD='mgtcrlketbprtoin',
+    MAIL_DEFAULT_SENDER='ristruttura.morcianesi.verifica@gmail.com',
+    ADMIN_EMAIL='admin@ristrutturazionimorcianesi.it',
     DEBUG=True
 )
 
 csrf = CSRFProtect(app)
+mail = Mail(app)  # Inizializzazione dell'oggetto mail
 
 # =============== DATABASE E CONNESSIONE ===============
 
@@ -570,6 +612,40 @@ def reset_password(token):
     
     return render_template('reset_password.html', token=token)
 
+# =============== PAGINE PRINCIPALI ===============
+
+@app.route('/preventivo-form')
+def preventivo_form():
+    """Pagina con form per la richiesta di preventivo dettagliato."""
+    return render_template('preventivo_form.html', title='Richiesta Preventivo')
+
+@app.route('/')
+@app.route('/home')
+def home():
+    """Pagina principale del sito."""
+    return render_template('home.html', title='Home')
+
+@app.route('/services')
+def services():
+    """Pagina dei servizi offerti."""
+    return render_template('home.html', title='Servizi')  # Per ora utilizziamo home.html, puoi creare un template specifico in futuro
+
+@app.route('/quote')
+def quote():
+    """Pagina per richiedere un preventivo."""
+    return render_template('quote.html', title='Preventivo')
+
+@app.route('/gallery')
+def gallery():
+    """Pagina della galleria di immagini."""
+    return render_template('home.html', title='Galleria')  # Per ora utilizziamo home.html, puoi creare un template specifico in futuro
+
+@app.route('/contact')
+def contact():
+    """Pagina dei contatti."""
+    return render_template('home.html', title='Contatti')  # Per ora utilizziamo home.html, puoi creare un template specifico in futuro
+
+
 # =============== CHAT AI CON OPENROUTER ===============
 
 @app.route('/api/chat', methods=['POST'])
@@ -700,150 +776,210 @@ def chat():
             "error": "Si è verificato un errore durante la comunicazione con l'assistente AI"
         }), 500
 
-# =============== ROUTE PRINCIPALI DEL SITO ===============
+# =============== API PER LA GESTIONE DELLE CHAT SALVATE ===============
 
-@app.route('/')
-def home():
-    """Pagina principale del sito."""
-    return render_template('home.html', title='Ristrutturazioni Morcianesi - Home')
+@app.route('/api/save-chat', methods=['POST'])
+def save_chat():
+    """API endpoint per salvare una conversazione nella cronologia dell'utente."""
+    # Verifica se l'utente è autenticato
+    if 'user_id' not in session:
+        return jsonify({
+            'success': False,
+            'error': 'Devi essere autenticato per salvare una conversazione'
+        }), 401
+    
+    if not request.is_json:
+        return jsonify({'success': False, 'error': 'La richiesta deve essere in formato JSON'}), 400
+    
+    data = request.json
+    title = data.get('title', 'Conversazione senza titolo')
+    messages = data.get('messages', [])
+    chat_id = data.get('chat_id', None)
+    
+    if not messages:
+        return jsonify({'success': False, 'error': 'Nessun messaggio da salvare'}), 400
+    
+    # Converti i messaggi in formato JSON
+    messages_json = json.dumps(messages)
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        if chat_id:  # Se esiste un ID, aggiorna la chat esistente
+            cursor.execute(
+                'UPDATE saved_chats SET title = ?, messages = ?, updated_at = ? WHERE id = ? AND user_id = ?',
+                (title, messages_json, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), chat_id, session['user_id'])
+            )
+            if cursor.rowcount == 0:
+                return jsonify({'success': False, 'error': 'Chat non trovata o non autorizzato'}), 404
+        else:  # Altrimenti, crea una nuova chat
+            cursor.execute(
+                'INSERT INTO saved_chats (user_id, title, messages) VALUES (?, ?, ?)',
+                (session['user_id'], title, messages_json)
+            )
+            chat_id = cursor.lastrowid
+        
+        db.commit()
+        return jsonify({'success': True, 'chat_id': chat_id})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/chat')
-def standalone_chat():
-    """Pagina dedicata per la chat preventivi."""
-    return render_template('chat.html', title='Chat Preventivi - Ristrutturazioni Morcianesi')
 
-@app.route('/chi-siamo')
-def about():
-    """Pagina Chi Siamo."""
-    return render_template('about.html', title='Chi Siamo - Ristrutturazioni Morcianesi')
+@app.route('/api/saved-chats', methods=['GET'])
+def get_saved_chats():
+    """API endpoint per ottenere tutte le conversazioni salvate dell'utente."""
+    # Verifica se l'utente è autenticato
+    if 'user_id' not in session:
+        return jsonify({
+            'success': False,
+            'error': 'Devi essere autenticato per visualizzare le conversazioni salvate'
+        }), 401
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        cursor.execute(
+            'SELECT id, title, messages, created_at, updated_at FROM saved_chats WHERE user_id = ? ORDER BY updated_at DESC',
+            (session['user_id'],)
+        )
+        
+        chats = []
+        for row in cursor.fetchall():
+            chats.append({
+                'id': row['id'],
+                'title': row['title'],
+                'messages': row['messages'],  # Questo sarà già in formato JSON
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at']
+            })
+        
+        return jsonify({'success': True, 'chats': chats})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/servizi')
-def services():
-    """Pagina dei servizi offerti."""
-    return render_template('services.html', title='Servizi - Ristrutturazioni Morcianesi')
 
-@app.route('/galleria')
-def gallery():
-    """Galleria dei lavori realizzati."""
-    return render_template('gallery.html', title='Galleria - Ristrutturazioni Morcianesi')
+@app.route('/api/chat/<int:chat_id>', methods=['GET', 'DELETE'])
+def manage_chat(chat_id):
+    """API endpoint per gestire una specifica conversazione salvata (caricamento o eliminazione)."""
+    # Verifica se l'utente è autenticato
+    if 'user_id' not in session:
+        return jsonify({
+            'success': False,
+            'error': 'Devi essere autenticato per gestire le conversazioni'
+        }), 401
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Verifica che la chat appartenga all'utente
+    cursor.execute(
+        'SELECT id, title, messages, created_at, updated_at FROM saved_chats WHERE id = ? AND user_id = ?',
+        (chat_id, session['user_id'])
+    )
+    chat = cursor.fetchone()
+    
+    if not chat:
+        return jsonify({'success': False, 'error': 'Chat non trovata o non autorizzato'}), 404
+    
+    if request.method == 'GET':
+        # Carica la chat
+        chat_data = {
+            'id': chat['id'],
+            'title': chat['title'],
+            'messages': chat['messages'],  # Già in formato JSON
+            'created_at': chat['created_at'],
+            'updated_at': chat['updated_at']
+        }
+        
+        return jsonify({'success': True, 'chat': chat_data})
+    
+    elif request.method == 'DELETE':
+        # Elimina la chat
+        try:
+            cursor.execute('DELETE FROM saved_chats WHERE id = ? AND user_id = ?', (chat_id, session['user_id']))
+            db.commit()
+            
+            return jsonify({'success': True})
+        except Exception as e:
+            db.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/contatti', methods=['GET', 'POST'])
-def contact():
-    """Pagina dei contatti con form di richiesta informazioni."""
-    if request.method == 'POST':
-        name = request.form.get('name')
+# =============== API ===============
+
+@app.route('/api/invia-preventivo', methods=['POST'])
+def invia_preventivo():
+    """API per l'invio di un preventivo dettagliato."""
+    # Non richiediamo più l'autenticazione per inviare un preventivo
+    
+    try:
+        # Ottieni dati dal form
+        nome = request.form.get('nome')
         email = request.form.get('email')
-        phone = request.form.get('phone')
-        message = request.form.get('message')
+        telefono = request.form.get('telefono')
+        indirizzo = request.form.get('indirizzo')
+        tipologia = request.form.get('tipologia')
+        altro_dettaglio = request.form.get('altro_dettaglio')
+        descrizione = request.form.get('descrizione')
         
-        # Validazione input
-        if not name or not email or not message:
-            flash('Per favore, completa tutti i campi obbligatori.', 'danger')
-            return render_template('contact.html', title='Contatti - Ristrutturazioni Morcianesi',
-                                  name_val=name, email_val=email, phone_val=phone, message_val=message)
+        # Se è stato selezionato "altro" come tipologia, usa il dettaglio fornito
+        if tipologia == 'altro' and altro_dettaglio:
+            tipo_lavoro = altro_dettaglio
+        else:
+            tipo_lavoro = tipologia
         
-        # Salva la richiesta nel database
+        # Gestione delle foto
+        foto_paths = []
+        if 'foto' in request.files:
+            foto_files = request.files.getlist('foto')
+            for i, foto in enumerate(foto_files):
+                if foto.filename != '':
+                    # Genera un nome file sicuro
+                    filename = secure_filename(foto.filename)
+                    # Creiamo una cartella per le foto dei preventivi se non esiste
+                    preventivi_dir = os.path.join(app.static_folder, 'uploads', 'preventivi')
+                    if not os.path.exists(preventivi_dir):
+                        os.makedirs(preventivi_dir)
+                    # Salva il file
+                    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+                    file_path = os.path.join(preventivi_dir, f"{timestamp}_{filename}")
+                    foto.save(file_path)
+                    foto_paths.append(os.path.join('uploads', 'preventivi', f"{timestamp}_{filename}"))
+        
+        # Determina l'ID utente se autenticato, altrimenti NULL
+        user_id = session.get('user_id', None)
+        
+        # Salva nel database
         db = get_db()
         cursor = db.cursor()
         cursor.execute(
-            'INSERT INTO contact_requests (name, email, phone, message, created_at) VALUES (?, ?, ?, ?, ?)',
-            (name, email, phone, message, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            'INSERT INTO preventivi (user_id, nome, email, telefono, indirizzo, tipologia, '
+            'descrizione, foto_paths, data_richiesta, stato) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (user_id, nome, email, telefono, indirizzo, tipo_lavoro,
+             descrizione, json.dumps(foto_paths), datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'Nuovo')
         )
         db.commit()
         
-        # Invia email di notifica agli amministratori
-        admin_email = app.config['EMAIL_USER']
-        subject = f'Nuova richiesta di contatto da {name}'
-        
-        html_content = f'''
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-                <h2 style="color: #1B9DD1;">Nuova richiesta di contatto</h2>
-                <p><strong>Nome:</strong> {name}</p>
-                <p><strong>Email:</strong> {email}</p>
-                <p><strong>Telefono:</strong> {phone or 'Non fornito'}</p>
-                <p><strong>Messaggio:</strong></p>
-                <p style="background-color: #f9f9f9; padding: 10px; border-radius: 5px;">{message}</p>
-                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-                <p style="font-size: 0.9em; color: #777;">Questa email è stata generata automaticamente dal sito Ristrutturazioni Morcianesi.</p>
-            </div>
-        </body>
-        </html>
-        '''
-        
-        send_email(admin_email, subject, html_content)
-        
-        # Invia email di conferma al cliente
-        client_subject = 'Abbiamo ricevuto la tua richiesta - Ristrutturazioni Morcianesi'
-        
-        client_html_content = f'''
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-                <h2 style="color: #1B9DD1;">Grazie per averci contattato!</h2>
-                <p>Gentile {name},</p>
-                <p>Abbiamo ricevuto la tua richiesta e ti ringraziamo per averci contattato.</p>
-                <p>Un nostro operatore ti risponderà il prima possibile all'indirizzo email {email}.</p>
-                <p>Ecco un riepilogo della tua richiesta:</p>
-                <p style="background-color: #f9f9f9; padding: 10px; border-radius: 5px;">{message}</p>
-                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-                <p style="font-size: 0.9em; color: #777;">Cordiali saluti,<br>Il team di Ristrutturazioni Morcianesi</p>
-            </div>
-        </body>
-        </html>
-        '''
-        
-        send_email(email, client_subject, client_html_content)
-        
-        flash('Grazie per il tuo messaggio! Ti risponderemo al più presto.', 'success')
-        return redirect(url_for('contact'))
-        
-    return render_template('contact.html', title='Contatti - Ristrutturazioni Morcianesi')
-
-@app.route('/preventivo', methods=['GET', 'POST'])
-def quote():
-    """Pagina per la richiesta di un preventivo."""
-    if request.method == 'POST':
-        name = request.form.get('name')
-        email = request.form.get('email')
-        phone = request.form.get('phone')
-        address = request.form.get('address')
-        service_type = request.form.get('service_type')
-        area = request.form.get('area')
-        details = request.form.get('details')
-        
-        # Validazione input
-        if not name or not email or not phone or not service_type:
-            flash('Per favore, completa tutti i campi obbligatori.', 'danger')
-            return render_template('quote.html', title='Richiedi Preventivo - Ristrutturazioni Morcianesi')
-        
-        # Salva la richiesta di preventivo nel database
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute(
-            'INSERT INTO quote_requests (name, email, phone, address, service_type, area, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            (name, email, phone, address, service_type, area, details, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        )
-        db.commit()
-        
-        # Invia email di notifica agli amministratori
-        admin_email = app.config['EMAIL_USER']
-        subject = f'Nuova richiesta di preventivo da {name}'
+        # Invia email di notifica all'azienda
+        admin_email = app.config.get('ADMIN_EMAIL', 'admin@ristrutturazionimorcianesi.it')
+        subject = 'Nuova richiesta di preventivo'
         
         html_content = f'''
         <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
                 <h2 style="color: #1B9DD1;">Nuova richiesta di preventivo</h2>
-                <p><strong>Nome:</strong> {name}</p>
+                <p><strong>Nome:</strong> {nome}</p>
                 <p><strong>Email:</strong> {email}</p>
-                <p><strong>Telefono:</strong> {phone}</p>
-                <p><strong>Indirizzo:</strong> {address or 'Non fornito'}</p>
-                <p><strong>Tipo di servizio:</strong> {service_type}</p>
-                <p><strong>Metratura:</strong> {area or 'Non fornita'} mq</p>
-                <p><strong>Dettagli aggiuntivi:</strong></p>
-                <p style="background-color: #f9f9f9; padding: 10px; border-radius: 5px;">{details or 'Nessun dettaglio fornito'}</p>
+                <p><strong>Telefono:</strong> {telefono}</p>
+                <p><strong>Indirizzo:</strong> {indirizzo}</p>
+                <p><strong>Tipologia lavoro:</strong> {tipo_lavoro}</p>
+                <p><strong>Descrizione:</strong></p>
+                <p style="background-color: #f9f9f9; padding: 10px; border-radius: 5px;">{descrizione}</p>
+                <p><strong>Allegati:</strong> {len(foto_paths)} foto</p>
                 <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
                 <p style="font-size: 0.9em; color: #777;">Questa email è stata generata automaticamente dal sito Ristrutturazioni Morcianesi.</p>
             </div>
@@ -854,21 +990,21 @@ def quote():
         send_email(admin_email, subject, html_content)
         
         # Invia email di conferma al cliente
-        client_subject = 'Richiesta di preventivo ricevuta - Ristrutturazioni Morcianesi'
+        client_subject = 'Abbiamo ricevuto la tua richiesta di preventivo - Ristrutturazioni Morcianesi'
         
         client_html_content = f'''
         <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
                 <h2 style="color: #1B9DD1;">Grazie per la tua richiesta di preventivo!</h2>
-                <p>Gentile {name},</p>
-                <p>Abbiamo ricevuto la tua richiesta di preventivo e ti ringraziamo per averci scelto.</p>
-                <p>Un nostro tecnico valuterà la tua richiesta e ti contatterà entro 48 ore lavorative per un preventivo dettagliato.</p>
+                <p>Gentile {nome},</p>
+                <p>Abbiamo ricevuto la tua richiesta di preventivo e ti ringraziamo per averci contattato.</p>
+                <p>Un nostro tecnico esaminerà i dettagli e ti contatterà al più presto per fissare un sopralluogo gratuito.</p>
                 <p>Ecco un riepilogo della tua richiesta:</p>
                 <ul>
-                    <li><strong>Tipo di servizio:</strong> {service_type}</li>
-                    <li><strong>Metratura:</strong> {area or 'Non fornita'} mq</li>
-                    <li><strong>Indirizzo:</strong> {address or 'Non fornito'}</li>
+                    <li><strong>Tipologia lavoro:</strong> {tipo_lavoro}</li>
+                    <li><strong>Indirizzo:</strong> {indirizzo}</li>
+                    <li><strong>Descrizione:</strong> {descrizione[:100]}...</li>
                 </ul>
                 <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
                 <p style="font-size: 0.9em; color: #777;">Cordiali saluti,<br>Il team di Ristrutturazioni Morcianesi</p>
@@ -879,24 +1015,388 @@ def quote():
         
         send_email(email, client_subject, client_html_content)
         
-        flash('Grazie per la richiesta di preventivo! Ti contatteremo il prima possibile.', 'success')
-        return redirect(url_for('quote'))
+        return jsonify({'success': True, 'message': 'Richiesta di preventivo inviata con successo!'})
+    
+    except Exception as e:
+        app.logger.error(f"Errore nell'invio del preventivo: {str(e)}")
+        return jsonify({'success': False, 'error': 'Si è verificato un errore durante l\'invio del preventivo.'}), 500
+
+@app.route('/api/preventivo', methods=['POST'])
+@login_required
+def submit_preventivo():
+    """API per l'invio di una richiesta di preventivo dettagliata."""
+    try:
+        data = {
+            'user_id': session['user_id'],
+            'nome': request.form.get('nome'),
+            'email': request.form.get('email'),
+            'telefono': request.form.get('telefono'),
+            'indirizzo': request.form.get('indirizzo'),
+            'tipologia': request.form.get('tipologia'),
+            'descrizione': request.form.get('descrizione'),
+            'budget': request.form.get('budget'),
+            'tempistiche': request.form.get('tempistiche'),
+            'data_richiesta': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'stato': 'nuovo'
+        }
         
-    return render_template('quote.html', title='Richiedi Preventivo - Ristrutturazioni Morcianesi')
+        # Gestione upload di foto
+        foto_paths = []
+        for i in range(1, 6):  # Fino a 5 foto
+            if f'foto{i}' in request.files:
+                foto = request.files[f'foto{i}']
+                if foto and foto.filename != '':
+                    filename = secure_filename(f"{session['user_id']}_{int(time.time())}_{i}_{foto.filename}")
+                    upload_folder = os.path.join(app.static_folder, 'uploads', 'preventivi')
+                    
+                    # Crea la directory se non esiste
+                    if not os.path.exists(upload_folder):
+                        os.makedirs(upload_folder)
+                    
+                    filepath = os.path.join(upload_folder, filename)
+                    foto.save(filepath)
+                    foto_paths.append(os.path.join('uploads', 'preventivi', filename))
+        
+        # Salva nel database
+        data['foto_paths'] = json.dumps(foto_paths)
+        
+        db = get_db()
+        db.execute(
+            'INSERT INTO preventivi (user_id, nome, email, telefono, indirizzo, '
+            'tipologia, descrizione, budget, tempistiche, foto_paths, data_richiesta, stato) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (data['user_id'], data['nome'], data['email'], data['telefono'], 
+             data['indirizzo'], data['tipologia'], data['descrizione'], 
+             data['budget'], data['tempistiche'], data['foto_paths'], 
+             data['data_richiesta'], data['stato'])
+        )
+        db.commit()
+        
+        # Invia email di conferma
+        msg = Message("Richiesta di preventivo ricevuta",
+                     sender=app.config['MAIL_DEFAULT_SENDER'],
+                     recipients=[data['email']])
+        msg.body = f"""
+        Gentile {data['nome']},
+        
+        Abbiamo ricevuto la tua richiesta di preventivo per il tuo progetto di ristrutturazione.
+        
+        Un nostro operatore la esaminerà al più presto e ti contatterà per ulteriori dettagli.
+        
+        Grazie per aver scelto Ristrutturazioni Morcianesi.
+        
+        Cordiali saluti,
+        Il team di Ristrutturazioni Morcianesi
+        """
+        mail.send(msg)
+        
+        # Invia email di notifica all'amministratore
+        admin_email = app.config.get('ADMIN_EMAIL', 'admin@ristrutturazionimorcianesi.it')
+        admin_msg = Message("Nuova richiesta di preventivo",
+                           sender=app.config['MAIL_DEFAULT_SENDER'],
+                           recipients=[admin_email])
+        admin_msg.body = f"""
+        È stata ricevuta una nuova richiesta di preventivo:
+        
+        Cliente: {data['nome']} ({data['email']})
+        Telefono: {data['telefono']}
+        Indirizzo: {data['indirizzo']}
+        Tipologia: {data['tipologia']}
+        Descrizione: {data['descrizione']}
+        Budget: {data['budget']}
+        Tempistiche: {data['tempistiche']}
+        
+        Accedi al pannello amministrativo per visualizzare i dettagli completi.
+        """
+        mail.send(admin_msg)
+        
+        flash('La tua richiesta di preventivo è stata inviata con successo! Ti contatteremo presto.', 'success')
+        return redirect(url_for('preventivo_form'))
+    
+    except Exception as e:
+        app.logger.error(f"Errore nell'invio del preventivo: {str(e)}")
+        flash('Si è verificato un errore durante l\'invio del preventivo. Riprova più tardi.', 'danger')
+        return redirect(url_for('preventivo_form'))
 
-# =============== PAGINE DI ERRORE PERSONALIZZATE ===============
+# =============== GESTIONE PREVENTIVI ===============
 
-@app.errorhandler(404)
-def page_not_found(e):
-    """Gestione errore 404: Pagina non trovata."""
-    return render_template('errors/404.html', title='Pagina non trovata'), 404
+@app.route('/admin/preventivi')
+@admin_required
+def admin_preventivi():
+    """Pagina di gestione preventivi per amministratori."""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT 
+            p.id, p.nome, p.email, p.telefono, p.indirizzo, p.tipo_lavoro, p.descrizione, 
+            p.foto_paths, p.created_at, p.stato, u.username as richiesto_da
+        FROM preventivi p
+        LEFT JOIN users u ON p.user_id = u.id
+        ORDER BY p.created_at DESC
+    """)
+    preventivi = cursor.fetchall()
+    
+    return render_template('gestione_preventivi.html', title='Gestione Preventivi', preventivi=preventivi)
 
-@app.errorhandler(500)
-def internal_server_error(e):
-    """Gestione errore 500: Errore interno del server."""
-    return render_template('errors/500.html', title='Errore del server'), 500
 
-# =============== AVVIO APPLICAZIONE ===============
+@app.route('/api/cambia-stato-preventivo', methods=['POST'])
+def cambia_stato_preventivo():
+    """API endpoint per cambiare lo stato di un preventivo."""
+    # Verifica che l'utente sia autenticato e sia un amministratore
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Utente non autenticato'}), 401
+    
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],))
+    user = cursor.fetchone()
+    
+    if not user or user['role'] != 'admin':
+        return jsonify({'success': False, 'error': 'Permessi insufficienti'}), 403
+    
+    # Ottieni i dati dalla richiesta
+    if not request.is_json:
+        return jsonify({'success': False, 'error': 'Dati non validi'}), 400
+    
+    data = request.json
+    preventivo_id = data.get('preventivo_id')
+    nuovo_stato = data.get('stato')
+    
+    if not preventivo_id or not nuovo_stato:
+        return jsonify({'success': False, 'error': 'Dati mancanti'}), 400
+    
+    # Controlla che lo stato sia valido
+    stati_validi = ['nuovo', 'in_lavorazione', 'completato', 'rifiutato']
+    if nuovo_stato not in stati_validi:
+        return jsonify({'success': False, 'error': 'Stato non valido'}), 400
+    
+    # Aggiorna lo stato del preventivo
+    try:
+        cursor.execute(
+            'UPDATE preventivi SET stato = ? WHERE id = ?',
+            (nuovo_stato, preventivo_id)
+        )
+        db.commit()
+        
+        # Registra un messaggio di sistema nella chat
+        stato_leggibile = {
+            'nuovo': 'nuovo',
+            'in_lavorazione': 'in lavorazione',
+            'completato': 'completato',
+            'rifiutato': 'rifiutato'
+        }
+        
+        messaggio = f"Lo stato del preventivo è stato aggiornato a: {stato_leggibile[nuovo_stato]}"
+        
+        cursor.execute(
+            '''INSERT INTO chat_messages (preventivo_id, user_id, message, is_system)
+               VALUES (?, ?, ?, 1)''',
+            (preventivo_id, session['user_id'], messaggio)
+        )
+        db.commit()
+        
+        return jsonify({'success': True})
+    
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=app.config['DEBUG'])
+
+@app.route('/api/rispondi-preventivo', methods=['POST'])
+def rispondi_preventivo():
+    """API endpoint per rispondere a un preventivo."""
+    # Verifica che l'utente sia autenticato
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Utente non autenticato'}), 401
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Verifica se l'utente è un amministratore o il proprietario del preventivo
+    cursor.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],))
+    user = cursor.fetchone()
+    
+    # Ottieni i dati dalla richiesta
+    if not request.is_json:
+        return jsonify({'success': False, 'error': 'Dati non validi'}), 400
+    
+    data = request.json
+    preventivo_id = data.get('preventivo_id')
+    messaggio = data.get('messaggio')
+    
+    if not preventivo_id or not messaggio:
+        return jsonify({'success': False, 'error': 'Dati mancanti'}), 400
+    
+    # Se non è admin, verifica che il preventivo appartenga all'utente
+    if user['role'] != 'admin':
+        cursor.execute(
+            'SELECT COUNT(*) as count FROM preventivi WHERE id = ? AND user_id = ?',
+            (preventivo_id, session['user_id'])
+        )
+        result = cursor.fetchone()
+        if result['count'] == 0:
+            return jsonify({'success': False, 'error': 'Preventivo non trovato o non autorizzato'}), 404
+    
+    # Salva il messaggio nella tabella chat_messages
+    try:
+        cursor.execute(
+            '''INSERT INTO chat_messages (preventivo_id, user_id, message)
+               VALUES (?, ?, ?)''',
+            (preventivo_id, session['user_id'], messaggio)
+        )
+        db.commit()
+        
+        # Recupera le informazioni dell'utente che ha inviato il messaggio
+        cursor.execute(
+            'SELECT u.nome, u.cognome, u.role FROM users u WHERE id = ?',
+            (session['user_id'],)
+        )
+        sender = cursor.fetchone()
+        
+        # Recupera l'orario di invio del messaggio
+        cursor.execute(
+            'SELECT created_at FROM chat_messages WHERE id = last_insert_rowid()'
+        )
+        timestamp = cursor.fetchone()['created_at']
+        
+        return jsonify({
+            'success': True,
+            'message': {
+                'content': messaggio,
+                'sender': f"{sender['nome']} {sender['cognome']}",
+                'is_admin': sender['role'] == 'admin',
+                'timestamp': timestamp
+            }
+        })
+    
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/get-chat-messages/<int:preventivo_id>', methods=['GET'])
+def get_chat_messages(preventivo_id):
+    """API endpoint per ottenere tutti i messaggi di chat di un preventivo."""
+    # Verifica che l'utente sia autenticato
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Utente non autenticato'}), 401
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Verifica se l'utente è un amministratore o il proprietario del preventivo
+    cursor.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],))
+    user = cursor.fetchone()
+    
+    # Se non è admin, verifica che il preventivo appartenga all'utente
+    if user['role'] != 'admin':
+        cursor.execute(
+            'SELECT COUNT(*) as count FROM preventivi WHERE id = ? AND user_id = ?',
+            (preventivo_id, session['user_id'])
+        )
+        result = cursor.fetchone()
+        if result['count'] == 0:
+            return jsonify({'success': False, 'error': 'Preventivo non trovato o non autorizzato'}), 404
+    
+    # Recupera tutti i messaggi della chat
+    cursor.execute('''
+        SELECT cm.id, cm.preventivo_id, cm.user_id, cm.message, cm.is_system, cm.created_at,
+               u.nome, u.cognome, u.role
+        FROM chat_messages cm
+        JOIN users u ON cm.user_id = u.id
+        WHERE cm.preventivo_id = ?
+        ORDER BY cm.created_at ASC
+    ''', (preventivo_id,))
+    
+    messages = []
+    for row in cursor.fetchall():
+        messages.append({
+            'id': row['id'],
+            'content': row['message'],
+            'sender': f"{row['nome']} {row['cognome']}",
+            'is_admin': row['role'] == 'admin',
+            'is_system': bool(row['is_system']),
+            'timestamp': row['created_at']
+        })
+    
+    return jsonify({'success': True, 'messages': messages})
+
+
+@app.route('/i-miei-preventivi')
+def i_miei_preventivi():
+    """Visualizza i preventivi dell'utente corrente."""
+    # Verifica che l'utente sia autenticato
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Recupera i preventivi dell'utente
+    cursor.execute('''
+        SELECT p.*, 
+               (SELECT COUNT(*) FROM chat_messages WHERE preventivo_id = p.id) as num_messaggi
+        FROM preventivi p
+        WHERE p.user_id = ?
+        ORDER BY p.data_richiesta DESC
+    ''', (session['user_id'],))
+    
+    preventivi = cursor.fetchall()
+    
+    return render_template('i_miei_preventivi.html', preventivi=preventivi)
+
+
+@app.route('/chat-preventivo/<int:preventivo_id>')
+def chat_preventivo(preventivo_id):
+    """Visualizza la chat di un preventivo specifico."""
+    # Verifica che l'utente sia autenticato
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Verifica se l'utente è un amministratore o il proprietario del preventivo
+    cursor.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],))
+    user = cursor.fetchone()
+    
+    # Recupera le informazioni del preventivo
+    cursor.execute('SELECT * FROM preventivi WHERE id = ?', (preventivo_id,))
+    preventivo = cursor.fetchone()
+    
+    if not preventivo:
+        flash('Preventivo non trovato', 'danger')
+        return redirect(url_for('home'))
+    
+    # Se non è admin, verifica che il preventivo appartenga all'utente
+    if user['role'] != 'admin' and preventivo['user_id'] != session['user_id']:
+        flash('Non hai i permessi per visualizzare questo preventivo', 'danger')
+        return redirect(url_for('home'))
+    
+    # Recupera tutti i messaggi della chat
+    cursor.execute('''
+        SELECT cm.id, cm.preventivo_id, cm.user_id, cm.message, cm.is_system, cm.created_at,
+               u.nome, u.cognome, u.role
+        FROM chat_messages cm
+        JOIN users u ON cm.user_id = u.id
+        WHERE cm.preventivo_id = ?
+        ORDER BY cm.created_at ASC
+    ''', (preventivo_id,))
+    
+    messages = []
+    for row in cursor.fetchall():
+        messages.append({
+            'id': row['id'],
+            'content': row['message'],
+            'sender': f"{row['nome']} {row['cognome']}",
+            'is_admin': row['role'] == 'admin',
+            'is_system': bool(row['is_system']),
+            'timestamp': row['created_at']
+        })
+    
+    return render_template('chat_preventivo.html', preventivo=preventivo, messages=messages)
+
+# =============== BLOCCO PER L'AVVIO DIRETTO ===============
+
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0', port=5000)

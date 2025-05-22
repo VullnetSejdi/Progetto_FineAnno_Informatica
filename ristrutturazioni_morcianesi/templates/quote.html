@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Preventivo Rapido - Ristrutturazioni Morcianesi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" type="image/x-icon">
+    {% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/style_chat.css') }}">
+    {% endblock %}
+</head>
+<body>
+    <div class="standalone-chat">
+        <!-- Pannello delle chat salvate in stile ChatGPT (visibile solo per utenti autenticati) -->
+        {% if session.user_id %}
+        <!-- Pulsante sempre visibile per accedere alle chat salvate -->
+        <button class="chat-history-button" id="chatHistoryButton" title="Le tue conversazioni salvate">
+            <i class="fas fa-history"></i>
+            <div class="notification-indicator" id="chatNotificationIndicator"></div>
+        </button>
+        
+        <!-- Overlay per sfondo scuro quando il pannello è aperto -->
+        <div class="saved-chats-overlay" id="savedChatsOverlay"></div>
+        
+        <div class="saved-chats-panel" id="savedChatsPanel">
+            <div class="saved-chats-header">
+                <h4>Le tue conversazioni</h4>
+                <button class="saved-chats-close" id="savedChatsClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="new-chat-container">
+                <button class="new-chat-button" id="newChatBtn">
+                    <i class="fas fa-plus"></i> Nuova chat
+                </button>
+            </div>
+            
+            <div class="saved-chat-list" id="savedChatList">
+                <!-- Le chat salvate verranno caricate qui dinamicamente -->
+                <div class="no-saved-chats">Nessuna conversazione salvata</div>
+            </div>
+            
+            <div class="saved-chats-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>{{ session.user_username }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="chat-container">
+            <div class="chat-header">
+                {% if session.user_id %}
+                <button class="chat-saved-toggle" id="chatSavedToggle" title="Le tue conversazioni">
+                    <i class="fas fa-bars"></i>
+                </button>
+                {% endif %}
+                
+                <a href="{{ url_for('home') }}" class="chat-return-link">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Torna al sito</span>
+                </a>
+                <h2>Preventivo Rapido</h2>
+                <div class="chat-controls">
+                    {% if session.user_id %}
+                    <button class="chat-save" id="chatSave" title="Salva chat">
+                        <i class="fas fa-bookmark"></i>
+                        <div class="chat-saved-indicator"><i class="fas fa-check"></i></div>
+                        <span class="tooltip">Salva conversazione</span>
+                    </button>
+                    {% else %}
+                    <button class="chat-save login-required" id="chatSaveLogin" title="Accedi per salvare">
+                        <i class="fas fa-bookmark"></i>
+                        <span class="tooltip">Accedi per salvare</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Banner per le conversazioni salvate (visibile solo per utenti autenticati) -->
+            {% if session.user_id %}
+            <div class="saved-chats-banner" id="savedChatsBanner">
+                <div class="saved-chats-banner-content">
+                    <i class="fas fa-history"></i>
+                    <span>Hai delle conversazioni salvate!</span>
+                </div>
+                <button class="saved-chats-banner-button" id="viewSavedChatsBtn">
+                    Visualizza
+                </button>
+                <button class="saved-chats-banner-close" id="closeBannerBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Pulsante di accesso rapido nella chat attuale -->
+            <button class="chat-quick-access" id="chatQuickAccess">
+                <i class="fas fa-history"></i>
+                <span>Visualizza chat salvate</span>
+            </button>
+            {% endif %}
+            
+            <div class="chat-body">
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-container">
+                    <textarea class="chat-input" id="chatInput" placeholder="Scrivi qui..."></textarea>
+                    <button class="chat-send" id="chatSend"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+            
+            {% if not session.user_id %}
+            <div class="login-message">
+                <p>Per salvare e visualizzare le conversazioni è necessario effettuare l'accesso</p>
+                <a href="{{ url_for('login', next=request.path) }}" class="login-button">Accedi</a>
+            </div>
+            {% endif %}
+            
+            <!-- Messaggio di conferma del salvataggio -->
+            <div class="save-confirmation" id="saveConfirmation">
+                Conversazione salvata correttamente!
+            </div>
+        </div>
+    </div>
+
+    <!-- Riferimento al file JavaScript esterno -->
+    <script src="{{ url_for('static', filename='script/preventivo_chat.js') }}"></script>
+</body>
+</html>
