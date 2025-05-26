@@ -16,6 +16,7 @@ accessi.log
 
 # Configurazioni locali (credenziali per email, API, ecc.)
 config_locale.py
+.env
 .env.morciano
 .env.sviluppo
 api_keys.json

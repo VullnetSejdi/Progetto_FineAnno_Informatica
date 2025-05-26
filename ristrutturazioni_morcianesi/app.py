@@ -13,6 +13,11 @@ import requests
 import json
 import time
 from datetime import datetime, timedelta
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, 
     session, g, jsonify, current_app
@@ -25,6 +30,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import smtplib
 from functools import wraps
+from authlib.integrations.flask_client import OAuth
+from authlib.common.security import generate_token
 
 # =============== DECORATORI PER L'AUTENTICAZIONE ===============
 
@@ -75,11 +82,90 @@ app.config.update(
     MAIL_PASSWORD='mgtcrlketbprtoin',
     MAIL_DEFAULT_SENDER='ristruttura.morcianesi.verifica@gmail.com',
     ADMIN_EMAIL='admin@ristrutturazionimorcianesi.it',
-    DEBUG=True
+    DEBUG=True,
+    # OAuth Configuration
+    GOOGLE_CLIENT_ID=os.environ.get('GOOGLE_CLIENT_ID', ''),
+    GOOGLE_CLIENT_SECRET=os.environ.get('GOOGLE_CLIENT_SECRET', ''),
+    APPLE_CLIENT_ID=os.environ.get('APPLE_CLIENT_ID', ''),
+    APPLE_CLIENT_SECRET=os.environ.get('APPLE_CLIENT_SECRET', ''),
+    APPLE_TEAM_ID=os.environ.get('APPLE_TEAM_ID', ''),
+    APPLE_KEY_ID=os.environ.get('APPLE_KEY_ID', ''),
 )
 
 csrf = CSRFProtect(app)
 mail = Mail(app)  # Inizializzazione dell'oggetto mail
+
+# =============== OAUTH CONFIGURATION ===============
+oauth = OAuth(app)
+
+# Check which OAuth providers are configured
+GOOGLE_OAUTH_ENABLED = bool(
+    app.config.get('GOOGLE_CLIENT_ID') and app.config.get('GOOGLE_CLIENT_SECRET')
+)
+
+APPLE_OAUTH_ENABLED = bool(
+    app.config.get('APPLE_CLIENT_ID') and app.config.get('APPLE_TEAM_ID') and 
+    app.config.get('APPLE_KEY_ID')
+)
+
+# Overall OAuth enabled if at least one provider is configured
+OAUTH_ENABLED = GOOGLE_OAUTH_ENABLED or APPLE_OAUTH_ENABLED
+
+# Initialize OAuth providers
+google = None
+apple = None
+
+# Configure Google OAuth if credentials are available
+if GOOGLE_OAUTH_ENABLED:
+    google = oauth.register(
+        name='google',
+        client_id=app.config['GOOGLE_CLIENT_ID'],
+        client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+        authorize_url='https://accounts.google.com/o/oauth2/auth',
+        authorize_params=None,
+        access_token_url='https://oauth2.googleapis.com/token',
+        access_token_params=None,
+        refresh_token_url=None,
+        client_kwargs={
+            'scope': 'openid email profile'
+        },
+    )
+    print("✅ Google OAuth configured successfully")
+
+# Configure Apple OAuth if credentials are available
+if APPLE_OAUTH_ENABLED:
+    apple = oauth.register(
+        name='apple',
+        client_id=app.config['APPLE_CLIENT_ID'],
+        client_secret=app.config['APPLE_CLIENT_SECRET'],
+        authorize_url='https://appleid.apple.com/auth/authorize',
+        authorize_params={
+            'response_mode': 'form_post',
+        },
+        access_token_url='https://appleid.apple.com/auth/token',
+        client_kwargs={
+            'scope': 'name email'
+        },
+    )
+    print("✅ Apple OAuth configured successfully")
+
+# Status messages
+if not OAUTH_ENABLED:
+    print("⚠️  No OAuth providers configured. OAuth login buttons will be disabled.")
+    print("   To enable OAuth, add credentials to your .env file.")
+    print("   See OAUTH_SETUP.md for detailed instructions.")
+elif GOOGLE_OAUTH_ENABLED and not APPLE_OAUTH_ENABLED:
+    print("ℹ️  Google OAuth enabled, Apple OAuth disabled.")
+    print("   You can add Apple OAuth credentials later to enable it.")
+elif APPLE_OAUTH_ENABLED and not GOOGLE_OAUTH_ENABLED:
+    print("ℹ️  Apple OAuth enabled, Google OAuth disabled.")
+elif GOOGLE_OAUTH_ENABLED and APPLE_OAUTH_ENABLED:
+    print("✅ Both Google and Apple OAuth configured successfully!")
+
+# Make OAuth status available to templates
+app.config['OAUTH_ENABLED'] = OAUTH_ENABLED
+app.config['GOOGLE_OAUTH_ENABLED'] = GOOGLE_OAUTH_ENABLED
+app.config['APPLE_OAUTH_ENABLED'] = APPLE_OAUTH_ENABLED
 
 # =============== DATABASE E CONNESSIONE ===============
 
@@ -122,7 +208,12 @@ def safe_get(row, key, default=None):
 # =============== FUNZIONI PER L'INVIO DI EMAIL ===============
 
 def send_email(to_email, subject, html_content):
-    """Funzione generica per inviare email."""
+    """Funzione generica per inviare email con diagnostiche avanzate."""
+    print(f"[EMAIL DEBUG] Tentativo invio email a: {to_email}")
+    print(f"[EMAIL DEBUG] Oggetto: {subject}")
+    print(f"[EMAIL DEBUG] Server SMTP: {app.config['EMAIL_HOST']}:{app.config['EMAIL_PORT']}")
+    print(f"[EMAIL DEBUG] Account mittente: {app.config['EMAIL_USER']}")
+    
     msg = MIMEMultipart()
     msg['From'] = app.config['EMAIL_USER']
     msg['To'] = to_email
@@ -130,14 +221,53 @@ def send_email(to_email, subject, html_content):
     msg.attach(MIMEText(html_content, 'html'))
     
     try:
+        print("[EMAIL DEBUG] Connessione al server SMTP...")
         server = smtplib.SMTP(app.config['EMAIL_HOST'], app.config['EMAIL_PORT'])
+        server.set_debuglevel(1)  # Abilita debug SMTP
+        
+        print("[EMAIL DEBUG] Avvio TLS...")
         server.starttls()
+        
+        print("[EMAIL DEBUG] Login al server...")
         server.login(app.config['EMAIL_USER'], app.config['EMAIL_PASSWORD'])
+        
+        print("[EMAIL DEBUG] Invio messaggio...")
         server.send_message(msg)
+        
+        print("[EMAIL DEBUG] Chiusura connessione...")
         server.quit()
+        
+        print(f"[EMAIL SUCCESS] Email inviata con successo a {to_email}")
         return True
+        
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"[EMAIL ERROR] Errore di autenticazione SMTP: {e}")
+        print("[EMAIL ERROR] Possibili cause:")
+        print("- Password dell'app Gmail scaduta o non valida")
+        print("- Autenticazione a 2 fattori non configurata correttamente")
+        print("- Account Gmail bloccato o sospeso")
+        return False
+        
+    except smtplib.SMTPConnectError as e:
+        print(f"[EMAIL ERROR] Errore di connessione SMTP: {e}")
+        print("[EMAIL ERROR] Possibili cause:")
+        print("- Problemi di rete")
+        print("- Server SMTP Gmail non raggiungibile")
+        print("- Porta SMTP bloccata dal firewall")
+        return False
+        
+    except smtplib.SMTPRecipientsRefused as e:
+        print(f"[EMAIL ERROR] Destinatario rifiutato: {e}")
+        print("[EMAIL ERROR] L'indirizzo email del destinatario non è valido")
+        return False
+        
+    except smtplib.SMTPException as e:
+        print(f"[EMAIL ERROR] Errore SMTP generico: {e}")
+        return False
+        
     except Exception as e:
-        print(f"Errore nell'invio dell'email: {e}")
+        print(f"[EMAIL ERROR] Errore sconosciuto nell'invio dell'email: {e}")
+        print(f"[EMAIL ERROR] Tipo errore: {type(e).__name__}")
         return False
 
 def send_verification_email(user_email, username, token):
@@ -206,10 +336,12 @@ def send_reset_password_email(user_email, username, token):
 class User:
     """Classe per la gestione degli utenti nel sistema."""
     
-    def __init__(self, id=None, username=None, email=None, password_hash=None, is_verified=0, 
-                 verification_token=None, token_created_at=None, reset_token=None, reset_token_created_at=None):
+    def __init__(self, id=None, nome=None, cognome=None, email=None, password_hash=None, is_verified=0, 
+                 verification_token=None, token_created_at=None, reset_token=None, reset_token_created_at=None, 
+                 role='user', oauth_provider=None, oauth_id=None, avatar_url=None, created_at=None):
         self.id = id
-        self.username = username
+        self.nome = nome
+        self.cognome = cognome
         self.email = email
         self.password_hash = password_hash
         self.is_verified = is_verified
@@ -217,6 +349,16 @@ class User:
         self.token_created_at = token_created_at
         self.reset_token = reset_token
         self.reset_token_created_at = reset_token_created_at
+        self.role = role
+        self.oauth_provider = oauth_provider
+        self.oauth_id = oauth_id
+        self.avatar_url = avatar_url
+        self.created_at = created_at
+    
+    @property
+    def full_name(self):
+        """Restituisce nome completo (nome + cognome)."""
+        return f"{self.nome} {self.cognome}" if self.nome and self.cognome else ""
 
     @staticmethod
     def get_by_id(user_id):
@@ -228,14 +370,20 @@ class User:
         if user_data:
             return User(
                 id=user_data['id'],
-                username=user_data['username'],
+                nome=safe_get(user_data, 'nome'),
+                cognome=safe_get(user_data, 'cognome'),
                 email=user_data['email'],
-                password_hash=user_data['password_hash'],
+                password_hash=safe_get(user_data, 'password_hash'),
                 is_verified=safe_get(user_data, 'is_verified', 0),
                 verification_token=safe_get(user_data, 'verification_token'),
                 token_created_at=safe_get(user_data, 'token_created_at'),
                 reset_token=safe_get(user_data, 'reset_token'),
-                reset_token_created_at=safe_get(user_data, 'reset_token_created_at')
+                reset_token_created_at=safe_get(user_data, 'reset_token_created_at'),
+                role=safe_get(user_data, 'role', 'user'),
+                oauth_provider=safe_get(user_data, 'oauth_provider'),
+                oauth_id=safe_get(user_data, 'oauth_id'),
+                avatar_url=safe_get(user_data, 'avatar_url'),
+                created_at=safe_get(user_data, 'created_at')
             )
         return None
 
@@ -249,14 +397,20 @@ class User:
         if user_data:
             return User(
                 id=user_data['id'],
-                username=user_data['username'],
+                nome=safe_get(user_data, 'nome'),
+                cognome=safe_get(user_data, 'cognome'),
                 email=user_data['email'],
-                password_hash=user_data['password_hash'],
+                password_hash=safe_get(user_data, 'password_hash'),
                 is_verified=safe_get(user_data, 'is_verified', 0),
                 verification_token=safe_get(user_data, 'verification_token'),
                 token_created_at=safe_get(user_data, 'token_created_at'),
                 reset_token=safe_get(user_data, 'reset_token'),
-                reset_token_created_at=safe_get(user_data, 'reset_token_created_at')
+                reset_token_created_at=safe_get(user_data, 'reset_token_created_at'),
+                role=safe_get(user_data, 'role', 'user'),
+                oauth_provider=safe_get(user_data, 'oauth_provider'),
+                oauth_id=safe_get(user_data, 'oauth_id'),
+                avatar_url=safe_get(user_data, 'avatar_url'),
+                created_at=safe_get(user_data, 'created_at')
             )
         return None
 
@@ -270,12 +424,45 @@ class User:
         if user_data:
             return User(
                 id=user_data['id'],
-                username=user_data['username'],
+                nome=safe_get(user_data, 'nome'),
+                cognome=safe_get(user_data, 'cognome'),
                 email=user_data['email'],
-                password_hash=user_data['password_hash'],
+                password_hash=safe_get(user_data, 'password_hash'),
                 is_verified=safe_get(user_data, 'is_verified', 0),
                 verification_token=safe_get(user_data, 'verification_token'),
-                token_created_at=safe_get(user_data, 'token_created_at')
+                token_created_at=safe_get(user_data, 'token_created_at'),
+                role=safe_get(user_data, 'role', 'user'),
+                oauth_provider=safe_get(user_data, 'oauth_provider'),
+                oauth_id=safe_get(user_data, 'oauth_id'),
+                avatar_url=safe_get(user_data, 'avatar_url'),
+                created_at=safe_get(user_data, 'created_at')
+            )
+        return None
+
+    @staticmethod
+    def get_by_oauth(oauth_provider, oauth_id):
+        """Recupera un utente dal database tramite provider OAuth e ID."""
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute('SELECT * FROM users WHERE oauth_provider = ? AND oauth_id = ?', (oauth_provider, oauth_id))
+        user_data = cursor.fetchone()
+        if user_data:
+            return User(
+                id=user_data['id'],
+                nome=safe_get(user_data, 'nome'),
+                cognome=safe_get(user_data, 'cognome'),
+                email=user_data['email'],
+                password_hash=safe_get(user_data, 'password_hash'),
+                is_verified=safe_get(user_data, 'is_verified', 0),
+                verification_token=safe_get(user_data, 'verification_token'),
+                token_created_at=safe_get(user_data, 'token_created_at'),
+                reset_token=safe_get(user_data, 'reset_token'),
+                reset_token_created_at=safe_get(user_data, 'reset_token_created_at'),
+                role=safe_get(user_data, 'role', 'user'),
+                oauth_provider=safe_get(user_data, 'oauth_provider'),
+                oauth_id=safe_get(user_data, 'oauth_id'),
+                avatar_url=safe_get(user_data, 'avatar_url'),
+                created_at=safe_get(user_data, 'created_at')
             )
         return None
 
@@ -289,13 +476,17 @@ class User:
         if user_data:
             return User(
                 id=user_data['id'],
-                username=user_data['username'],
+                nome=safe_get(user_data, 'nome'),
+                cognome=safe_get(user_data, 'cognome'),
                 email=user_data['email'],
                 password_hash=user_data['password_hash'],
                 is_verified=safe_get(user_data, 'is_verified', 0),
                 reset_token=safe_get(user_data, 'reset_token'),
-                reset_token_created_at=safe_get(user_data, 'reset_token_created_at')
+                reset_token_created_at=safe_get(user_data, 'reset_token_created_at'),
+                role=safe_get(user_data, 'role', 'user')
             )
+        return None
+
         return None
 
     def save(self):
@@ -306,15 +497,23 @@ class User:
         if self.id is None:
             # INSERT per un nuovo utente
             cursor.execute(
-                'INSERT INTO users (username, email, password_hash, is_verified, verification_token, token_created_at) VALUES (?, ?, ?, ?, ?, ?)',
-                (self.username, self.email, self.password_hash, self.is_verified, self.verification_token, self.token_created_at)
+                '''INSERT INTO users (nome, cognome, email, password_hash, is_verified, verification_token, 
+                   token_created_at, oauth_provider, oauth_id, avatar_url) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                (self.nome, self.cognome, self.email, self.password_hash, self.is_verified, 
+                 self.verification_token, self.token_created_at, self.oauth_provider, 
+                 self.oauth_id, self.avatar_url)
             )
             self.id = cursor.lastrowid
         else:
             # UPDATE per un utente esistente
             cursor.execute(
-                'UPDATE users SET username = ?, email = ?, password_hash = ?, is_verified = ?, verification_token = ?, token_created_at = ? WHERE id = ?',
-                (self.username, self.email, self.password_hash, self.is_verified, self.verification_token, self.token_created_at, self.id)
+                '''UPDATE users SET nome = ?, cognome = ?, email = ?, password_hash = ?, is_verified = ?, 
+                   verification_token = ?, token_created_at = ?, oauth_provider = ?, oauth_id = ?, 
+                   avatar_url = ? WHERE id = ?''',
+                (self.nome, self.cognome, self.email, self.password_hash, self.is_verified, 
+                 self.verification_token, self.token_created_at, self.oauth_provider, 
+                 self.oauth_id, self.avatar_url, self.id)
             )
 
         db.commit()
@@ -371,6 +570,7 @@ def inject_global_vars():
     user = None
     if user_id:
         user = User.get_by_id(user_id)
+    
     return {
         'year': datetime.utcnow().year,
         'logged_in_user': user
@@ -385,15 +585,18 @@ def register():
         return redirect(url_for('home'))
 
     if request.method == 'POST':
-        username = request.form.get('username')
+        nome = request.form.get('nome')
+        cognome = request.form.get('cognome')
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
         errors = []
 
         # Validazione input
-        if not username or len(username) < 3 or len(username) > 30:
-            errors.append("Il nome utente deve avere tra 3 e 30 caratteri.")
+        if not nome or len(nome) < 2 or len(nome) > 50:
+            errors.append("Il nome deve avere tra 2 e 50 caratteri.")
+        if not cognome or len(cognome) < 2 or len(cognome) > 50:
+            errors.append("Il cognome deve avere tra 2 e 50 caratteri.")
         if not email:
             errors.append("L'email è richiesta.")
         elif not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email):
@@ -403,39 +606,52 @@ def register():
         if password != confirm_password:
             errors.append("Le password non corrispondono.")
 
+        # Check for existing email
         if User.get_by_email(email):
             errors.append('Un account con questa email esiste già. Prova ad accedere.')
 
         if not errors:
-            # Genera un token di verifica
-            verification_token = secrets.token_urlsafe(32)
-            token_created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
-            # Salva l'utente con il token
-            hashed_password = generate_password_hash(password)
-            new_user = User(
-                id=None, 
-                username=username, 
-                email=email, 
-                password_hash=hashed_password,
-                is_verified=0,
-                verification_token=verification_token,
-                token_created_at=token_created_at
-            )
-            new_user.save()
-            
-            # Invia l'email di verifica
-            if send_verification_email(email, username, verification_token):
-                flash('Registrazione completata! Ti abbiamo inviato un\'email di verifica. Per favore, controlla la tua casella di posta.', 'success')
-            else:
-                flash('Registrazione completata, ma non è stato possibile inviare l\'email di verifica. Prova a richiederne un\'altra.', 'warning')
-            
-            return redirect(url_for('login'))
+            try:
+                # Genera un token di verifica
+                verification_token = secrets.token_urlsafe(32)
+                token_created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                
+                # Salva l'utente con il token
+                hashed_password = generate_password_hash(password)
+                new_user = User(
+                    id=None, 
+                    nome=nome, 
+                    cognome=cognome,
+                    email=email, 
+                    password_hash=hashed_password,
+                    is_verified=0,
+                    verification_token=verification_token,
+                    token_created_at=token_created_at
+                )
+                new_user.save()
+                
+                # Invia l'email di verifica
+                full_name = f"{nome} {cognome}"
+                if send_verification_email(email, full_name, verification_token):
+                    flash('Registrazione completata! Ti abbiamo inviato un\'email di verifica. Per favore, controlla la tua casella di posta.', 'success')
+                else:
+                    flash('Registrazione completata, ma non è stato possibile inviare l\'email di verifica. Prova a richiederne un\'altra.', 'warning')
+                
+                return redirect(url_for('login'))
+                
+            except Exception as e:
+                print(f"Errore durante la registrazione: {e}")
+                if "UNIQUE constraint failed: users.email" in str(e):
+                    flash('Un account con questa email esiste già. Prova ad accedere.', 'danger')
+                else:
+                    flash('Si è verificato un errore durante la registrazione. Riprova più tardi.', 'danger')
+                return render_template('register.html', title='Registrazione',
+                                      nome_val=nome, cognome_val=cognome, email_val=email)
         else:
             for error in errors:
                 flash(error, 'danger')
             return render_template('register.html', title='Registrazione',
-                                  username_val=username, email_val=email)
+                                  nome_val=nome, cognome_val=cognome, email_val=email)
 
     return render_template('register.html', title='Registrazione')
 
@@ -469,7 +685,7 @@ def login():
             # Login riuscito
             session['user_id'] = user.id
             session['user_email'] = user.email
-            session['user_username'] = user.username
+            session['user_full_name'] = user.full_name
             flash('Accesso effettuato con successo!', 'success')
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('home'))
@@ -526,7 +742,7 @@ def resend_verification():
         user.save()
         
         # Invia la nuova email
-        if send_verification_email(email, user.username, verification_token):
+        if send_verification_email(email, user.full_name, verification_token):
             flash('Email di verifica inviata! Controlla la tua casella di posta.', 'success')
         else:
             flash('Errore nell\'invio dell\'email. Riprova più tardi.', 'danger')
@@ -540,7 +756,7 @@ def logout():
     """Gestisce il logout dell'utente."""
     session.pop('user_id', None)
     session.pop('user_email', None)
-    session.pop('user_username', None)
+    session.pop('user_full_name', None)
     flash('Ti sei disconnesso.', 'info')
     return redirect(url_for('home'))
 
@@ -552,15 +768,26 @@ def forgot_password():
         
     if request.method == 'POST':
         email = request.form.get('email')
+        print(f"[FORGOT PASSWORD] Richiesta reset per email: {email}")
+        
         user = User.get_by_email(email)
         
         if user:
+            print(f"[FORGOT PASSWORD] Utente trovato: {user.full_name} (ID: {user.id})")
             reset_token = user.set_reset_token()
-            if send_reset_password_email(user.email, user.username, reset_token):
+            print(f"[FORGOT PASSWORD] Token reset generato per utente {user.id}")
+            
+            print(f"[FORGOT PASSWORD] Tentativo invio email a: {user.email}")
+            email_sent = send_reset_password_email(user.email, user.full_name, reset_token)
+            
+            if email_sent:
+                print(f"[FORGOT PASSWORD] ✅ Email inviata con successo a {user.email}")
                 flash('Ti abbiamo inviato un\'email con le istruzioni per reimpostare la tua password.', 'success')
             else:
+                print(f"[FORGOT PASSWORD] ❌ Errore nell'invio email a {user.email}")
                 flash('Si è verificato un errore nell\'invio dell\'email. Riprova più tardi.', 'danger')
         else:
+            print(f"[FORGOT PASSWORD] ⚠️ Email non trovata nel database: {email}")
             # Non rivelare che l'email non esiste (per sicurezza)
             flash('Se l\'indirizzo email è registrato, riceverai le istruzioni per reimpostare la password.', 'info')
             
@@ -612,6 +839,153 @@ def reset_password(token):
     
     return render_template('reset_password.html', token=token)
 
+# =============== OAUTH AUTHENTICATION ROUTES ===============
+
+@app.route('/auth/<provider>')
+def oauth_login(provider):
+    """Inizia il processo di autenticazione OAuth."""
+    if 'user_id' in session:
+        return redirect(url_for('home'))
+    
+    # Check specific provider availability
+    if provider == 'google':
+        if not GOOGLE_OAUTH_ENABLED or not google:
+            flash('Google OAuth non è attualmente configurato. Usa il login tradizionale.', 'warning')
+            return redirect(url_for('login'))
+        redirect_uri = url_for('oauth_callback', provider='google', _external=True)
+        return google.authorize_redirect(redirect_uri)
+        
+    elif provider == 'apple':
+        if not APPLE_OAUTH_ENABLED or not apple:
+            flash('Apple OAuth non è attualmente configurato. Usa il login tradizionale.', 'warning')
+            return redirect(url_for('login'))
+        redirect_uri = url_for('oauth_callback', provider='apple', _external=True)
+        return apple.authorize_redirect(redirect_uri)
+        
+    else:
+        flash(f'Provider OAuth "{provider}" non supportato.', 'danger')
+        return redirect(url_for('login'))
+
+@app.route('/auth/<provider>/callback')
+def oauth_callback(provider):
+    """Gestisce il callback OAuth e crea/autentica l'utente."""
+    if 'user_id' in session:
+        return redirect(url_for('home'))
+    
+    # Check if OAuth is enabled
+    if not OAUTH_ENABLED:
+        flash('OAuth non è configurato.', 'danger')
+        return redirect(url_for('login'))
+    
+    try:
+        if provider == 'google' and google:
+            token = google.authorize_access_token()
+            user_info = token.get('userinfo')
+            if user_info:
+                return handle_oauth_user(
+                    provider='google',
+                    oauth_id=user_info['sub'],
+                    email=user_info['email'],
+                    nome=user_info.get('given_name', ''),
+                    cognome=user_info.get('family_name', ''),
+                    avatar_url=user_info.get('picture', '')
+                )
+        
+        elif provider == 'apple' and apple:
+            token = apple.authorize_access_token()
+            # Apple fornisce i dati dell'utente solo al primo login
+            if request.form.get('user'):
+                user_data = json.loads(request.form.get('user'))
+                nome = user_data.get('name', {}).get('firstName', '')
+                cognome = user_data.get('name', {}).get('lastName', '')
+            else:
+                nome = ''
+                cognome = ''
+            
+            # Apple fornisce sempre l'email nell'ID token
+            claims = token.get('id_token_claims', {})
+            return handle_oauth_user(
+                provider='apple',
+                oauth_id=claims.get('sub'),
+                email=claims.get('email', ''),
+                nome=nome,
+                cognome=cognome,
+                avatar_url=''
+            )
+        
+        else:
+            flash('Provider OAuth non supportato.', 'danger')
+            return redirect(url_for('login'))
+            
+    except Exception as e:
+        print(f"[OAUTH ERROR] {provider}: {str(e)}")
+        flash('Errore durante l\'autenticazione. Riprova più tardi.', 'danger')
+        return redirect(url_for('login'))
+
+def handle_oauth_user(provider, oauth_id, email, nome, cognome, avatar_url):
+    """Gestisce la creazione o login di un utente OAuth."""
+    try:
+        # Cerca utente esistente tramite OAuth ID
+        user = User.get_by_oauth(provider, oauth_id)
+        
+        if user:
+            # Utente esistente, effettua login
+            session['user_id'] = user.id
+            session['user_email'] = user.email
+            session['user_full_name'] = user.full_name
+            flash(f'Accesso effettuato con successo tramite {provider.title()}!', 'success')
+            return redirect(url_for('home'))
+        
+        # Verifica se esiste già un utente con questa email
+        existing_user = User.get_by_email(email)
+        if existing_user:
+            # Collega l'account OAuth all'utente esistente
+            existing_user.oauth_provider = provider
+            existing_user.oauth_id = oauth_id
+            if avatar_url:
+                existing_user.avatar_url = avatar_url
+            existing_user.save()
+            
+            session['user_id'] = existing_user.id
+            session['user_email'] = existing_user.email
+            session['user_full_name'] = existing_user.full_name
+            flash(f'Account collegato con successo a {provider.title()}!', 'success')
+            return redirect(url_for('home'))
+        
+        # Crea nuovo utente
+        # Se nome/cognome non sono forniti, usa l'email come fallback
+        if not nome and not cognome:
+            email_name = email.split('@')[0]
+            nome = email_name.capitalize()
+            cognome = 'User'
+        elif not cognome:
+            cognome = 'User'
+        elif not nome:
+            nome = 'User'
+        
+        new_user = User(
+            nome=nome,
+            cognome=cognome,
+            email=email,
+            password_hash=None,  # OAuth users don't have passwords
+            is_verified=1,  # OAuth emails are pre-verified
+            oauth_provider=provider,
+            oauth_id=oauth_id,
+            avatar_url=avatar_url
+        )
+        new_user.save()
+        
+        session['user_id'] = new_user.id
+        session['user_email'] = new_user.email
+        session['user_full_name'] = new_user.full_name
+        flash(f'Account creato con successo tramite {provider.title()}! Benvenuto!', 'success')
+        return redirect(url_for('home'))
+        
+    except Exception as e:
+        print(f"[OAUTH USER HANDLE ERROR] {provider}: {str(e)}")
+        flash('Errore durante la gestione dell\'account. Riprova più tardi.', 'danger')
+        return redirect(url_for('login'))
+
 # =============== PAGINE PRINCIPALI ===============
 
 @app.route('/preventivo-form')
@@ -628,7 +1002,9 @@ def home():
 @app.route('/services')
 def services():
     """Pagina dei servizi offerti."""
-    return render_template('home.html', title='Servizi')  # Per ora utilizziamo home.html, puoi creare un template specifico in futuro
+    return render_template('services.html', title='Servizi')
+
+
 
 @app.route('/quote')
 def quote():
@@ -638,12 +1014,74 @@ def quote():
 @app.route('/gallery')
 def gallery():
     """Pagina della galleria di immagini."""
-    return render_template('home.html', title='Galleria')  # Per ora utilizziamo home.html, puoi creare un template specifico in futuro
+    return render_template('gallery.html', title='Galleria')
 
-@app.route('/contact')
+@app.route('/contact', methods=['GET', 'POST'])
 def contact():
-    """Pagina dei contatti."""
-    return render_template('home.html', title='Contatti')  # Per ora utilizziamo home.html, puoi creare un template specifico in futuro
+    """Pagina dei contatti e gestione invio modulo."""
+    if request.method == 'POST':
+        try:
+            # Check if it's a JSON request (AJAX)
+            if request.is_json:
+                data = request.get_json()
+                nome = data.get('nome', '').strip()
+                email = data.get('email', '').strip()
+                telefono = data.get('telefono', '').strip()
+                servizio = data.get('servizio', '')
+                messaggio = data.get('messaggio', '').strip()
+            else:
+                # Regular form submission
+                nome = request.form.get('nome', '').strip()
+                email = request.form.get('email', '').strip()
+                telefono = request.form.get('telefono', '').strip()
+                servizio = request.form.get('servizio', '')
+                messaggio = request.form.get('messaggio', '').strip()
+            
+            # Validazione base
+            errors = []
+            if not nome:
+                errors.append('Il nome è obbligatorio')
+            if not email:
+                errors.append('L\'email è obbligatoria')
+            elif not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+                errors.append('Formato email non valido')
+            if not messaggio:
+                errors.append('Il messaggio è obbligatorio')
+                
+            if errors:
+                if request.is_json:
+                    return jsonify({'success': False, 'errors': errors}), 400
+                for error in errors:
+                    flash(error, 'error')
+                return redirect(url_for('contact'))
+            
+            # Salva il messaggio nel database
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute('''
+                INSERT INTO contact_messages (nome, email, telefono, servizio, messaggio, data_invio)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (nome, email, telefono, servizio, messaggio, datetime.now()))
+            db.commit()
+            
+            # Risposta di successo
+            if request.is_json:
+                return jsonify({
+                    'success': True, 
+                    'message': 'Messaggio inviato con successo! Ti contatteremo presto.'
+                })
+            
+            # Risposta per form submission normale
+            flash('Messaggio inviato con successo! Ti contatteremo presto.', 'success')
+            return redirect(url_for('contact'))
+            
+        except Exception as e:
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Errore nel sistema. Riprova più tardi.'}), 500
+            flash('Errore nel sistema. Riprova più tardi.', 'error')
+            return redirect(url_for('contact'))
+    
+    return render_template('contact.html', title='Contatti')
 
 
 # =============== CHAT AI CON OPENROUTER ===============
@@ -657,6 +1095,7 @@ def chat():
     data = request.json
     user_message = data.get('message', '')
     chat_history = data.get('history', [])
+    message_analysis = data.get('analysis', {})  # Analysis from frontend
     
     if not user_message:
         return jsonify({'error': 'Il messaggio non può essere vuoto'}), 400
@@ -673,53 +1112,68 @@ def chat():
     else:
         time_greeting = "buonasera"
     
-    # Preparazione dei messaggi per OpenRouter
-    messages = []
+    # Enhanced system prompt based on message analysis
+    system_context = f"""Sei l'assistente virtuale ufficiale di Ristrutturazioni Morcianesi, azienda fondata nel 2003 a Morciano di Romagna (RN) e specializzata in ristrutturazioni edilizie di alta qualità. 
+
+INFORMAZIONI SULL'AZIENDA:
+- Nome: Ristrutturazioni Morcianesi
+- Fondazione: 2003
+- Sede: Via Francesco Petrarca, 19, Morciano di Romagna (RN)
+- Contatti: Tel: 351 781 4956 (Neti), 328 883 7562 (Shino), Email: ristrutturazionimorcianesi@gmail.com
+- Esperienza: Oltre 20 anni nel settore delle ristrutturazioni, con centinaia di progetti completati in tutta la provincia di Rimini e Pesaro
+- Filosofia: Qualità, professionalità e rispetto delle tempistiche e dei preventivi concordati
+
+SERVIZI OFFERTI:
+1. Ristrutturazione completa appartamenti
+2. Rifacimento bagni e cucine
+3. Opere murarie e demolizioni
+4. Impianti idraulici ed elettrici(Contatti stretti della ditta)
+5. Pavimentazioni e rivestimenti
+6. Controsoffitti e cartongesso
+7. Pitture e decorazioni
+8. Facciate esterne
+9. Ristrutturazioni commerciali
+
+PROCESSI DI LAVORO:
+- Sopralluogo gratuito ed entro 24 ore
+- Preventivo dettagliato senza impegno
+- Progettazione personalizzata
+- Gestione completa dei lavori e delle pratiche burocratiche
+- Consegna nei tempi concordati
+- Garanzia sui lavori eseguiti
+
+CONTEXT ANALYSIS:"""
     
-    # Aggiungi un messaggio di sistema che definisce il contesto
-        # Aggiungi un messaggio di sistema che definisce il contesto
-    messages.append({
-                "role": "system", 
-                "content": f"""Sei l'assistente virtuale ufficiale di Ristrutturazioni Morcianesi, azienda fondata nel 2003 a Morciano di Romagna (RN) e specializzata in ristrutturazioni edilizie di alta qualità. 
+    # Add context based on message analysis
+    if message_analysis:
+        intent = message_analysis.get('intent', '')
+        keywords = message_analysis.get('keywords', [])
+        urgency = message_analysis.get('urgency', 'normal')
+        
+        if intent:
+            system_context += f"\n- Intento rilevato: {intent}"
+        if keywords:
+            system_context += f"\n- Parole chiave: {', '.join(keywords)}"
+        if urgency == 'high':
+            system_context += "\n- ALTA PRIORITÀ: Richiesta urgente, fornisci informazioni di contatto diretto"
+    
+    system_context += f"""
 
-        INFORMAZIONI SULL'AZIENDA:
-        - Nome: Ristrutturazioni Morcianesi
-        - Fondazione: 2003
-        - Sede: Via Francesco Petrarca, 19, Morciano di Romagna (RN)
-        - Contatti: Tel: 351 781 4956 (Neti), 328 883 7562 (Shino), Email: ristrutturazionimorcianesi@gmail.com
-        - Esperienza: Oltre 20 anni nel settore delle ristrutturazioni, con centinaia di progetti completati in tutta la provincia di Rimini e Pesaro
-        - Filosofia: Qualità, professionalità e rispetto delle tempistiche e dei preventivi concordati
+ISTRUZIONI IMPORTANTI:
+- L'ora attuale è {now.strftime('%H:%M')} e oggi è {now.strftime('%A %d %B %Y')}
+- Se l'utente saluta con "ciao", "salve", "buongiorno", ecc., rispondi sempre con "{time_greeting}" seguito dalla tua risposta
+- Quando chiedi informazioni di contatto, menziona gli orari di lavoro dell'azienda
+- Fornisci sempre informazioni accurate sugli orari, sui contatti e sui servizi
+- Usa emoji appropriati per rendere la conversazione più friendly
+- Formatta i numeri e i prezzi in modo chiaro
+- Suggerisci sempre i nostri contatti quando appropriato
 
-        SERVIZI OFFERTI:
-        1. Ristrutturazione completa appartamenti
-        2. Rifacimento bagni e cucine
-        3. Opere murarie e demolizioni
-        4. Impianti idraulici ed elettrici(Contatti stretti della ditta)
-        5. Pavimentazioni e rivestimenti
-        6. Controsoffitti e cartongesso
-        7. Pitture e decorazioni
-        8. Facciate esterne
-        9. Ristrutturazioni commerciali
+Il tuo compito è aiutare i clienti a ottenere informazioni sui servizi, stimare costi e tempi approssimativi per lavori di ristrutturazione, e raccogliere le informazioni necessarie per un preventivo dettagliato. Quando un utente chiede un preventivo, cerca di ottenere: tipo di lavoro, metratura, ubicazione, e tempistiche desiderate. 
 
-        PROCESSI DI LAVORO:
-        - Sopralluogo gratuito ed entro 24 ore
-        - Preventivo dettagliato senza impegno
-        - Progettazione personalizzata
-        - Gestione completa dei lavori e delle pratiche burocratiche
-        - Consegna nei tempi concordati
-        - Garanzia sui lavori eseguiti
-
-        ISTRUZIONI IMPORTANTI:
-        - L'ora attuale è {now.strftime('%H:%M')} e oggi è {now.strftime('%A %d %B %Y')}
-        - Se l'utente saluta con "ciao", "salve", "buongiorno", ecc., rispondi sempre con "{time_greeting}" seguito dalla tua risposta
-        - Quando chiedi informazioni di contatto, menziona gli orari di lavoro dell'azienda
-        - Fornisci sempre informazioni accurate sugli orari, sui contatti e sui servizi
-
-
-        Il tuo compito è aiutare i clienti a ottenere informazioni sui servizi, stimare costi e tempi approssimativi per lavori di ristrutturazione, e raccogliere le informazioni necessarie per un preventivo dettagliato. Quando un utente chiede un preventivo, cerca di ottenere: tipo di lavoro, metratura, ubicazione, e tempistiche desiderate. 
-
-        Rispondi sempre in modo professionale, cordiale e conciso, rappresentando al meglio l'immagine di Ristrutturazioni Morcianesi."""
-            })
+Rispondi sempre in modo professionale, cordiale e conciso, rappresentando al meglio l'immagine di Ristrutturazioni Morcianesi."""
+    
+    # Preparazione dei messaggi per OpenRouter
+    messages = [{"role": "system", "content": system_context}]
     
     # Aggiungi la cronologia della chat
     for msg in chat_history:
@@ -728,53 +1182,125 @@ def chat():
     # Aggiungi il messaggio dell'utente
     messages.append({"role": "user", "content": user_message})
     
-    # Torna a usare gpt-3.5-turbo che funziona sicuramente con OpenRouter
+    # Usa gpt-3.5-turbo con parametri ottimizzati
     payload = {
         "model": "openai/gpt-3.5-turbo",
         "messages": messages,
         "temperature": 0.7,
-        "max_tokens": 500
+        "max_tokens": 600,
+        "top_p": 0.9,
+        "frequency_penalty": 0.1,
+        "presence_penalty": 0.1
     }
     
     headers = {
         "Authorization": f"Bearer {app.config['OPENROUTER_API_KEY']}",
-        "HTTP-Referer": request.host_url,  # Richiesto da OpenRouter
+        "HTTP-Referer": request.host_url,
         "Content-Type": "application/json"
     }
     
     try:
         response = requests.post(app.config['OPENROUTER_URL'], headers=headers, json=payload)
-        response.raise_for_status()  # Solleva un'eccezione in caso di errore HTTP
+        response.raise_for_status()
         
         result = response.json()
         
-        # Debug - Aggiungi questo per vedere la struttura della risposta
+        # Debug
         print(f"Risposta API: {json.dumps(result, indent=2)}")
         
-        # Gestione della risposta con verifica della struttura
+        # Enhanced response processing
         if "choices" in result and len(result["choices"]) > 0:
             if "message" in result["choices"][0] and "content" in result["choices"][0]["message"]:
                 ai_message = result["choices"][0]["message"]["content"]
+                
+                # Generate smart suggestions based on the conversation
+                suggestions = generate_smart_suggestions(user_message, ai_message, chat_history)
+                
+                # Enhanced response with additional context
+                response_data = {
+                    'message': ai_message,
+                    'suggestions': suggestions,
+                    'timestamp': now.isoformat(),
+                    'context': {
+                        'intent': message_analysis.get('intent', ''),
+                        'urgent': message_analysis.get('urgency') == 'high'
+                    }
+                }
+                
+                return jsonify(response_data)
             else:
-                # Fallback per altri modelli con struttura diversa
-                ai_message = "Mi dispiace, ho avuto problemi a interpretare la risposta. Puoi riprovare con una domanda diversa?"
-                print(f"Struttura risposta inaspettata: {result}")
+                ai_message = str(result.get("choices", [{}])[0])
         else:
-            ai_message = "Mi dispiace, ho ricevuto una risposta vuota dal modello. Riprova più tardi."
+            ai_message = "Mi dispiace, non sono riuscito a elaborare la tua richiesta. Puoi contattarci direttamente?"
         
-        return jsonify({
-            "success": True,
-            "message": ai_message
-        })
-    
+        return jsonify({'message': ai_message})
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Errore nella richiesta all'API: {e}")
+        return jsonify({'error': 'Errore del servizio AI. Riprova più tardi.'}), 500
     except Exception as e:
-        print(f"Errore nella richiesta all'API: {str(e)}")
-        if response and hasattr(response, 'text'):
-            print(f"Risposta del server: {response.text}")
-        return jsonify({
-            "success": False,
-            "error": "Si è verificato un errore durante la comunicazione con l'assistente AI"
-        }), 500
+        print(f"Errore imprevisto: {e}")
+        return jsonify({'error': 'Si è verificato un errore imprevisto.'}), 500
+
+def generate_smart_suggestions(user_message, ai_response, chat_history):
+    """Genera suggerimenti intelligenti basati sulla conversazione."""
+    suggestions = []
+    
+    # Analizza il contenuto per generare suggerimenti pertinenti
+    user_lower = user_message.lower()
+    ai_lower = ai_response.lower()
+    
+    # Suggerimenti basati sul tipo di richiesta
+    if any(word in user_lower for word in ['preventivo', 'costo', 'prezzo', 'quanto']):
+        if 'bagno' in user_lower:
+            suggestions.extend([
+                "Che dimensioni ha il bagno?",
+                "Preferisci doccia o vasca?",
+                "Hai già i materiali in mente?"
+            ])
+        elif 'cucina' in user_lower:
+            suggestions.extend([
+                "Che stile di cucina preferisci?",
+                "Quanti metri quadri ha la cucina?",
+                "Vuoi cambiare anche gli elettrodomestici?"
+            ])
+        elif 'appartamento' in user_lower or 'casa' in user_lower:
+            suggestions.extend([
+                "Quanti metri quadri è l'appartamento?",
+                "Quante stanze da ristrutturare?",
+                "Quando vorresti iniziare i lavori?"
+            ])
+        else:
+            suggestions.extend([
+                "Puoi darmi più dettagli sul lavoro?",
+                "In che zona si trova l'immobile?",
+                "Hai un budget di riferimento?"
+            ])
+    
+    elif any(word in user_lower for word in ['contatto', 'telefono', 'chiamare']):
+        suggestions.extend([
+            "Quali sono gli orari di lavoro?",
+            "Posso avere un preventivo scritto?",
+            "Fate sopralluoghi gratuiti?"
+        ])
+    
+    elif any(word in user_lower for word in ['tempo', 'giorni', 'settimane']):
+        suggestions.extend([
+            "Dipende anche dalla stagione?",
+            "Posso rimanere in casa durante i lavori?",
+            "Come organizzate il cantiere?"
+        ])
+    
+    # Suggerimenti generali se non ne abbiamo di specifici
+    if not suggestions:
+        suggestions = [
+            "Richiedi un preventivo gratuito",
+            "Vedi la nostra galleria di lavori",
+            "Contattaci per un sopralluogo"
+        ]
+    
+    # Limita a 3 suggerimenti
+    return suggestions[:3]
 
 # =============== API PER LA GESTIONE DELLE CHAT SALVATE ===============
 
@@ -1128,275 +1654,265 @@ def admin_preventivi():
     cursor = db.cursor()
     cursor.execute("""
         SELECT 
-            p.id, p.nome, p.email, p.telefono, p.indirizzo, p.tipo_lavoro, p.descrizione, 
-            p.foto_paths, p.created_at, p.stato, u.username as richiesto_da
+            p.id, p.nome, p.email, p.telefono, p.indirizzo, 
+            COALESCE(p.tipologia, p.tipo_lavoro) as tipologia, 
+            p.descrizione, p.foto_paths, p.data_richiesta, p.stato, 
+            p.risposta, p.data_risposta, (u.nome || ' ' || u.cognome) as richiesto_da
         FROM preventivi p
         LEFT JOIN users u ON p.user_id = u.id
-        ORDER BY p.created_at DESC
+        ORDER BY p.data_richiesta DESC
     """)
-    preventivi = cursor.fetchall()
+    preventivi = []
+    rows = cursor.fetchall()
+    
+    # Processiamo i risultati per gestire i percorsi delle foto
+    for row in rows:
+        preventivo = dict(row)
+        # Convertiamo i percorsi delle foto da JSON a list
+        if preventivo.get('foto_paths'):
+            try:
+                preventivo['foto_paths'] = json.loads(preventivo['foto_paths'])
+            except:
+                preventivo['foto_paths'] = []
+        else:
+            preventivo['foto_paths'] = []
+        preventivi.append(preventivo)
     
     return render_template('gestione_preventivi.html', title='Gestione Preventivi', preventivi=preventivi)
 
 
-@app.route('/api/cambia-stato-preventivo', methods=['POST'])
-def cambia_stato_preventivo():
-    """API endpoint per cambiare lo stato di un preventivo."""
-    # Verifica che l'utente sia autenticato e sia un amministratore
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'error': 'Utente non autenticato'}), 401
+@app.route('/admin/cambia-stato-preventivo/<int:preventivo_id>', methods=['POST'])
+@admin_required
+def cambia_stato_preventivo(preventivo_id):
+    """Endpoint per cambiare lo stato di un preventivo."""
+    nuovo_stato = request.form.get('stato')
     
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],))
-    user = cursor.fetchone()
-    
-    if not user or user['role'] != 'admin':
-        return jsonify({'success': False, 'error': 'Permessi insufficienti'}), 403
-    
-    # Ottieni i dati dalla richiesta
-    if not request.is_json:
-        return jsonify({'success': False, 'error': 'Dati non validi'}), 400
-    
-    data = request.json
-    preventivo_id = data.get('preventivo_id')
-    nuovo_stato = data.get('stato')
-    
-    if not preventivo_id or not nuovo_stato:
-        return jsonify({'success': False, 'error': 'Dati mancanti'}), 400
+    if not nuovo_stato:
+        flash('Stato mancante', 'error')
+        return redirect(url_for('admin_preventivi'))
     
     # Controlla che lo stato sia valido
-    stati_validi = ['nuovo', 'in_lavorazione', 'completato', 'rifiutato']
+    stati_validi = ['Nuovo', 'In lavorazione', 'Risposto']
     if nuovo_stato not in stati_validi:
-        return jsonify({'success': False, 'error': 'Stato non valido'}), 400
+        flash('Stato non valido', 'error')
+        return redirect(url_for('admin_preventivi'))
     
     # Aggiorna lo stato del preventivo
+    db = get_db()
     try:
-        cursor.execute(
+        db.execute(
             'UPDATE preventivi SET stato = ? WHERE id = ?',
             (nuovo_stato, preventivo_id)
         )
         db.commit()
-        
-        # Registra un messaggio di sistema nella chat
-        stato_leggibile = {
-            'nuovo': 'nuovo',
-            'in_lavorazione': 'in lavorazione',
-            'completato': 'completato',
-            'rifiutato': 'rifiutato'
-        }
-        
-        messaggio = f"Lo stato del preventivo è stato aggiornato a: {stato_leggibile[nuovo_stato]}"
-        
-        cursor.execute(
-            '''INSERT INTO chat_messages (preventivo_id, user_id, message, is_system)
-               VALUES (?, ?, ?, 1)''',
-            (preventivo_id, session['user_id'], messaggio)
-        )
-        db.commit()
-        
-        return jsonify({'success': True})
-    
+        flash(f'Stato del preventivo aggiornato a {nuovo_stato}', 'success')
     except Exception as e:
         db.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        flash(f'Si è verificato un errore: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_preventivi'))
 
 
-@app.route('/api/rispondi-preventivo', methods=['POST'])
-def rispondi_preventivo():
+@app.route('/admin/rispondi-preventivo/<int:preventivo_id>', methods=['POST'])
+@admin_required
+def rispondi_preventivo(preventivo_id):
     """API endpoint per rispondere a un preventivo."""
-    # Verifica che l'utente sia autenticato
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'error': 'Utente non autenticato'}), 401
+    risposta = request.form.get('risposta')
+    if not risposta:
+        flash('La risposta non può essere vuota.', 'error')
+        return redirect(url_for('admin_preventivi'))
     
     db = get_db()
-    cursor = db.cursor()
-    
-    # Verifica se l'utente è un amministratore o il proprietario del preventivo
-    cursor.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],))
-    user = cursor.fetchone()
-    
-    # Ottieni i dati dalla richiesta
-    if not request.is_json:
-        return jsonify({'success': False, 'error': 'Dati non validi'}), 400
-    
-    data = request.json
-    preventivo_id = data.get('preventivo_id')
-    messaggio = data.get('messaggio')
-    
-    if not preventivo_id or not messaggio:
-        return jsonify({'success': False, 'error': 'Dati mancanti'}), 400
-    
-    # Se non è admin, verifica che il preventivo appartenga all'utente
-    if user['role'] != 'admin':
-        cursor.execute(
-            'SELECT COUNT(*) as count FROM preventivi WHERE id = ? AND user_id = ?',
-            (preventivo_id, session['user_id'])
-        )
-        result = cursor.fetchone()
-        if result['count'] == 0:
-            return jsonify({'success': False, 'error': 'Preventivo non trovato o non autorizzato'}), 404
-    
-    # Salva il messaggio nella tabella chat_messages
     try:
-        cursor.execute(
-            '''INSERT INTO chat_messages (preventivo_id, user_id, message)
-               VALUES (?, ?, ?)''',
-            (preventivo_id, session['user_id'], messaggio)
+        # Aggiorna il preventivo con la risposta e cambia lo stato
+        db.execute(
+            'UPDATE preventivi SET risposta = ?, data_risposta = ?, stato = ? WHERE id = ?',
+            (risposta, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'Risposto', preventivo_id)
         )
         db.commit()
         
-        # Recupera le informazioni dell'utente che ha inviato il messaggio
+        # Ottieni i dettagli del preventivo per inviare email
+        cursor = db.cursor()
         cursor.execute(
-            'SELECT u.nome, u.cognome, u.role FROM users u WHERE id = ?',
-            (session['user_id'],)
+            'SELECT nome, email FROM preventivi WHERE id = ?',
+            (preventivo_id,)
         )
-        sender = cursor.fetchone()
+        preventivo = cursor.fetchone()
         
-        # Recupera l'orario di invio del messaggio
-        cursor.execute(
-            'SELECT created_at FROM chat_messages WHERE id = last_insert_rowid()'
-        )
-        timestamp = cursor.fetchone()['created_at']
+        if preventivo:
+            # Invia email al cliente
+            try:
+                msg = Message("Risposta al tuo preventivo",
+                             sender=app.config.get('MAIL_DEFAULT_SENDER', 'info@ristrutturazionimorcianesi.it'),
+                             recipients=[preventivo['email']])
+                msg.body = f"""
+                Gentile {preventivo['nome']},
+                
+                Abbiamo elaborato la tua richiesta di preventivo e di seguito trovi la nostra risposta:
+                
+                {risposta}
+                
+                Per qualsiasi domanda, non esitare a contattarci.
+                
+                Cordiali saluti,
+                Il team di Ristrutturazioni Morcianesi
+                """
+                mail.send(msg)
+            except Exception as e:
+                # Logga l'errore ma continua l'esecuzione
+                print(f"Errore nell'invio dell'email: {str(e)}")
         
-        return jsonify({
-            'success': True,
-            'message': {
-                'content': messaggio,
-                'sender': f"{sender['nome']} {sender['cognome']}",
-                'is_admin': sender['role'] == 'admin',
-                'timestamp': timestamp
-            }
-        })
-    
+        flash('Risposta inviata con successo.', 'success')
     except Exception as e:
         db.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        flash(f'Si è verificato un errore: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_preventivi'))
 
+@app.route('/admin/contact-messages')
+@admin_required
+def admin_contact_messages():
+    """Pagina admin per visualizzare i messaggi di contatto."""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('''
+        SELECT id, nome, email, telefono, servizio, messaggio, data_invio, stato, risposta, data_risposta
+        FROM contact_messages 
+        ORDER BY data_invio DESC
+    ''')
+    messages = cursor.fetchall()
+    
+    return render_template('admin/contact_messages.html', title='Messaggi di Contatto', messages=messages)
 
-@app.route('/api/get-chat-messages/<int:preventivo_id>', methods=['GET'])
-def get_chat_messages(preventivo_id):
-    """API endpoint per ottenere tutti i messaggi di chat di un preventivo."""
-    # Verifica che l'utente sia autenticato
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'error': 'Utente non autenticato'}), 401
+@app.route('/admin/contact-messages/<int:message_id>/respond', methods=['POST'])
+@admin_required
+def admin_respond_contact(message_id):
+    """Risponde a un messaggio di contatto."""
+    response_text = request.form.get('risposta', '').strip()
+    
+    if not response_text:
+        flash('La risposta non può essere vuota', 'error')
+        return redirect(url_for('admin_contact_messages'))
     
     db = get_db()
     cursor = db.cursor()
-    
-    # Verifica se l'utente è un amministratore o il proprietario del preventivo
-    cursor.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],))
-    user = cursor.fetchone()
-    
-    # Se non è admin, verifica che il preventivo appartenga all'utente
-    if user['role'] != 'admin':
-        cursor.execute(
-            'SELECT COUNT(*) as count FROM preventivi WHERE id = ? AND user_id = ?',
-            (preventivo_id, session['user_id'])
-        )
-        result = cursor.fetchone()
-        if result['count'] == 0:
-            return jsonify({'success': False, 'error': 'Preventivo non trovato o non autorizzato'}), 404
-    
-    # Recupera tutti i messaggi della chat
     cursor.execute('''
-        SELECT cm.id, cm.preventivo_id, cm.user_id, cm.message, cm.is_system, cm.created_at,
-               u.nome, u.cognome, u.role
-        FROM chat_messages cm
-        JOIN users u ON cm.user_id = u.id
-        WHERE cm.preventivo_id = ?
-        ORDER BY cm.created_at ASC
-    ''', (preventivo_id,))
+        UPDATE contact_messages 
+        SET risposta = ?, data_risposta = ?, stato = 'risposto'
+        WHERE id = ?
+    ''', (response_text, datetime.now(), message_id))
+    db.commit()
     
-    messages = []
-    for row in cursor.fetchall():
-        messages.append({
-            'id': row['id'],
-            'content': row['message'],
-            'sender': f"{row['nome']} {row['cognome']}",
-            'is_admin': row['role'] == 'admin',
-            'is_system': bool(row['is_system']),
-            'timestamp': row['created_at']
-        })
+    flash('Risposta inviata con successo', 'success')
+    return redirect(url_for('admin_contact_messages'))
+
+@app.route('/chat')
+def chat_page():
+    """Pagina della chat standalone."""
+    return render_template('chat.html', title='Chat Preventivi')
+
+# =============== TEST EMAIL SYSTEM ===============
+
+@app.route('/test-email')
+@admin_required
+def test_email_system():
+    """Endpoint per testare il sistema email (solo admin)."""
+    return render_template('admin/test_email.html', title='Test Sistema Email')
+
+@app.route('/test-email/send', methods=['POST'])
+@admin_required
+def send_test_email():
+    """Invia un'email di test per verificare la configurazione."""
+    test_email = request.form.get('test_email')
     
-    return jsonify({'success': True, 'messages': messages})
+    if not test_email:
+        return jsonify({'success': False, 'error': 'Email di test richiesta'})
+    
+    # Contenuto email di test
+    subject = "Test Sistema Email - Ristrutturazioni Morcianesi"
+    html_content = f'''
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #1B9DD1;">Test Sistema Email</h2>
+            <p>Questo è un messaggio di test per verificare il funzionamento del sistema email.</p>
+            <p><strong>Data invio:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+            <p><strong>Configurazione:</strong></p>
+            <ul>
+                <li>Server SMTP: {app.config['EMAIL_HOST']}</li>
+                <li>Porta: {app.config['EMAIL_PORT']}</li>
+                <li>Account: {app.config['EMAIL_USER']}</li>
+            </ul>
+            <p>Se ricevi questa email, il sistema funziona correttamente!</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="font-size: 0.9em; color: #777;">Test inviato dal pannello amministrativo<br>Ristrutturazioni Morcianesi</p>
+        </div>
+    </body>
+    </html>
+    '''
+    
+    # Tenta l'invio
+    success = send_email(test_email, subject, html_content)
+    
+    if success:
+        return jsonify({'success': True, 'message': f'Email di test inviata con successo a {test_email}'})
+    else:
+        return jsonify({'success': False, 'error': 'Errore nell\'invio dell\'email di test. Controlla i log del server.'})
 
-
-@app.route('/i-miei-preventivi')
-def i_miei_preventivi():
-    """Visualizza i preventivi dell'utente corrente."""
-    # Verifica che l'utente sia autenticato
+@app.route('/load_chats', methods=['GET'])
+@login_required
+def load_chats():
+    """Carica le chat salvate dell'utente."""
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return jsonify({'success': False, 'error': 'Utente non autenticato'})
     
-    db = get_db()
-    cursor = db.cursor()
-    
-    # Recupera i preventivi dell'utente
-    cursor.execute('''
-        SELECT p.*, 
-               (SELECT COUNT(*) FROM chat_messages WHERE preventivo_id = p.id) as num_messaggi
-        FROM preventivi p
-        WHERE p.user_id = ?
-        ORDER BY p.data_richiesta DESC
-    ''', (session['user_id'],))
-    
-    preventivi = cursor.fetchall()
-    
-    return render_template('i_miei_preventivi.html', preventivi=preventivi)
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute('''
+            SELECT id, title, content, created_at 
+            FROM user_chats 
+            WHERE user_id = ? 
+            ORDER BY created_at DESC
+        ''', (session['user_id'],))
+        
+        chats = []
+        for row in cursor.fetchall():
+            chats.append({
+                'id': row['id'],
+                'title': row['title'],
+                'content': json.loads(row['content']) if row['content'] else [],
+                'created_at': row['created_at']
+            })
+        
+        return jsonify({'success': True, 'chats': chats})
+        
+    except Exception as e:
+        print(f"Errore nel caricamento chat: {e}")
+        return jsonify({'success': False, 'error': 'Errore nel caricamento'})
 
+# =============== AVVIO DEL SERVER ===============
 
-@app.route('/chat-preventivo/<int:preventivo_id>')
-def chat_preventivo(preventivo_id):
-    """Visualizza la chat di un preventivo specifico."""
-    # Verifica che l'utente sia autenticato
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+if __name__ == '__main__':
+    print("🚀 Avvio del server Flask...")
+    print("📁 Database:", app.config['DATABASE'])
     
-    db = get_db()
-    cursor = db.cursor()
+    # Verifica database
+    if not os.path.exists(app.config['DATABASE']):
+        print("❌ Database non trovato! Esegui 'python init_db.py' per crearlo.")
+        exit(1)
+    else:
+        print("✅ Database trovato")
     
-    # Verifica se l'utente è un amministratore o il proprietario del preventivo
-    cursor.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],))
-    user = cursor.fetchone()
+    print("🌐 Server in avvio su http://127.0.0.1:5007")
+    print("📧 Email server: " + app.config['EMAIL_HOST'])
+    print("👤 Email account: " + app.config['EMAIL_USER'])
+    print("🔧 Modalità: Produzione (debug disabilitato per stabilità)")
     
-    # Recupera le informazioni del preventivo
-    cursor.execute('SELECT * FROM preventivi WHERE id = ?', (preventivo_id,))
-    preventivo = cursor.fetchone()
-    
-    if not preventivo:
-        flash('Preventivo non trovato', 'danger')
-        return redirect(url_for('home'))
-    
-    # Se non è admin, verifica che il preventivo appartenga all'utente
-    if user['role'] != 'admin' and preventivo['user_id'] != session['user_id']:
-        flash('Non hai i permessi per visualizzare questo preventivo', 'danger')
-        return redirect(url_for('home'))
-    
-    # Recupera tutti i messaggi della chat
-    cursor.execute('''
-        SELECT cm.id, cm.preventivo_id, cm.user_id, cm.message, cm.is_system, cm.created_at,
-               u.nome, u.cognome, u.role
-        FROM chat_messages cm
-        JOIN users u ON cm.user_id = u.id
-        WHERE cm.preventivo_id = ?
-        ORDER BY cm.created_at ASC
-    ''', (preventivo_id,))
-    
-    messages = []
-    for row in cursor.fetchall():
-        messages.append({
-            'id': row['id'],
-            'content': row['message'],
-            'sender': f"{row['nome']} {row['cognome']}",
-            'is_admin': row['role'] == 'admin',
-            'is_system': bool(row['is_system']),
-            'timestamp': row['created_at']
-        })
-    
-    return render_template('chat_preventivo.html', preventivo=preventivo, messages=messages)
-
-# =============== BLOCCO PER L'AVVIO DIRETTO ===============
-
-if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(
+        debug=False,
+        port=5007,
+        host='127.0.0.1',
+        threaded=True,
+        use_reloader=False
+    )

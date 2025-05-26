@@ -161,47 +161,67 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: 3px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-account-wrapper:hover {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .nav-username-compact {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     margin-top: 2px;
     color: white;
-    max-width: 70px;
+    max-width: 80px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     text-transform: uppercase;
+    font-weight: 600;
 }
 
 .user-dropdown {
     position: absolute;
-    top: 65px;
+    top: 70px;
     right: 20px;
     background-color: white;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    border-radius: 6px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     padding: 8px 0;
-    min-width: 120px;
+    min-width: 200px;
     display: none;
     z-index: 1000;
+    transition: all 0.3s ease;
 }
 
 .dropdown-item {
-    display: block;
-    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
     color: #333;
     text-decoration: none;
     transition: background-color 0.2s;
+    font-weight: 500;
 }
 
 .dropdown-item:hover {
     background-color: #f5f5f5;
+    color: var(--primary);
 }
 
 #user-account-icon:hover + .user-dropdown,
 .user-dropdown:hover {
     display: block;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .nav-username {

@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style_chat.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/modules/style_chat.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     {% block extra_css %}{% endblock %}
     <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" type="image/x-icon">
@@ -43,18 +44,35 @@
             <a href="{{ url_for('contact') }}" {% if request.endpoint == 'contact' %}class="active"{% endif %}>CONTATTI</a>
             <a class="nav-link highlight" href="{{ url_for('preventivo_form') }}" {% if request.endpoint == 'preventivo_form' %}class="active"{% endif %}>
                 <i class="fas fa-calculator" style="margin-right: 6px;"></i>PREVENTIVO</a>
+            {% if logged_in_user and logged_in_user.role == 'admin' %}
+            <a href="{{ url_for('admin_preventivi') }}" {% if request.endpoint == 'admin_preventivi' %}class="active"{% endif %} style="background-color: #ff9800; color: white; padding: 5px 10px; border-radius: 4px; margin-left: 10px;">
+                <i class="fas fa-clipboard-list" style="margin-right: 6px;"></i>ADMIN</a>
+            {% endif %}
             {% if logged_in_user %}
+            <!-- Pulsante diretto per accesso admin alla gestione preventivi -->
+            {% if logged_in_user.role == 'admin' %}
+            <a href="{{ url_for('admin_preventivi') }}" class="nav-auth-icon-link" title="Gestione Preventivi" style="margin-right: 10px; background-color: #ffae00; padding: 5px 10px; border-radius: 4px;">
+                <i class="fas fa-clipboard-list" style="margin-right: 5px;"></i>
+                <span class="nav-username-compact">GESTISCI</span>
+            </a>
+            {% endif %}
+            
+            <!-- Icona profilo utente -->
             <a href="#" class="nav-auth-icon-link" title="Account" id="user-account-icon">
                 <div class="user-account-wrapper">
                     <img src="{{ url_for('static', filename='favicon/personal_area.ico') }}" alt="Area Personale" class="navbar-login-icon">
-                    <span class="nav-username-compact">{{ logged_in_user.username|upper }}</span>
+                    <span class="nav-username-compact">{{ logged_in_user.full_name|upper }}</span>
                 </div>
             </a>
-            <div class="user-dropdown">
+            
+            <!-- Menu dropdown utente -->
+            <div class="user-dropdown" style="display: none;" id="user-dropdown-menu">
                 {% if logged_in_user.role == 'admin' %}
-                <a href="{{ url_for('admin_preventivi') }}" class="dropdown-item">GESTIONE PREVENTIVI</a>
+                <a href="{{ url_for('admin_preventivi') }}" class="dropdown-item"><i class="fas fa-clipboard-list" style="margin-right: 8px;"></i>GESTIONE PREVENTIVI</a>
+                <a href="{{ url_for('admin_contact_messages') }}" class="dropdown-item"><i class="fas fa-envelope" style="margin-right: 8px;"></i>MESSAGGI CONTATTO</a>
                 {% endif %}
-                <a href="{{ url_for('logout') }}" class="dropdown-item">LOGOUT</a>
+                <a href="{{ url_for('debug_user') }}" class="dropdown-item"><i class="fas fa-bug" style="margin-right: 8px;"></i>INFO UTENTE</a>
+                <a href="{{ url_for('logout') }}" class="dropdown-item"><i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i>LOGOUT</a>
             </div>
             {% else %}
             <a href="{{ url_for('login') }}" class="nav-auth-icon-link" title="Accedi o Registrati">
@@ -132,13 +150,13 @@
         </div>
     </footer>
 
-    <!-- Chat Button per preventivi -->
-    <div class="chat-button" id="chatButton">
-        <div class="chat-button-inner">
-            <i class="fas fa-calculator"></i>
-            <span>Preventivo<br>Rapido</span>
-        </div>
-    </div>
+    <!-- Pulsante Floating per Preventivi IA -->
+    <a href="/chat" class="ai-chat-btn" title="Preventivo Rapido con IA" style="position: fixed; bottom: 25px; right: 25px; z-index: 9999; display: flex; width: 70px; height: 70px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; align-items: center; justify-content: center; text-decoration: none; color: white; flex-direction: column;">
+        <i class="fas fa-robot" style="font-size: 24px; margin-bottom: 2px;"></i>
+        <span style="font-size: 8px; font-weight: bold;">CHAT IA</span>
+    </a>
+    
+
     
     <!-- Chat Container -->
     <div class="chat-container" id="chatContainer">
@@ -187,6 +205,247 @@
     <script src="{{ url_for('static', filename='script/scroll_effect.js') }}" defer></script>
     <script src="{{ url_for('static', filename='script/chat.js') }}"></script>
     <script src="{{ url_for('static', filename='script/chat_expand.js') }}"></script>
+    
+    <!-- Script per hamburger menu -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburger = document.querySelector('.hamburger');
+            const navbar = document.querySelector('.navbar nav');
+            
+            if (hamburger && navbar) {
+                hamburger.addEventListener('click', function() {
+                    navbar.classList.toggle('active');
+                    hamburger.classList.toggle('active');
+                    console.log('Hamburger clicked, navbar active:', navbar.classList.contains('active'));
+                });
+            } else {
+                console.log('Hamburger elements not found:', {hamburger: !!hamburger, navbar: !!navbar});
+            }
+        });
+    </script>
+    
+    <!-- Script per gestire il dropdown menu -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userAccountIcon = document.getElementById('user-account-icon');
+            const dropdownMenu = document.getElementById('user-dropdown-menu');
+            
+            if (userAccountIcon && dropdownMenu) {
+                // Mostra/nascondi menu al click
+                userAccountIcon.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (dropdownMenu.style.display === 'block') {
+                        dropdownMenu.style.display = 'none';
+                    } else {
+                        dropdownMenu.style.display = 'block';
+                        
+                        // Aggiungiamo un'animazione al menu dropdown
+                        dropdownMenu.style.animation = 'fadeInDown 0.3s ease-out forwards';
+                    }
+                });
+                
+                // Chiudi il dropdown se si clicca fuori
+                document.addEventListener('click', function(e) {
+                    if (!userAccountIcon.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        dropdownMenu.style.display = 'none';
+                    }
+                });
+                
+                // Prevent default su tutti i link del menu
+                const menuLinks = dropdownMenu.querySelectorAll('a');
+                menuLinks.forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                    });
+                });
+            }
+        });
+    </script>
+    
+    <!-- Stile aggiuntivo inline per l'animazione -->
+    <style>
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        #user-dropdown-menu {
+            animation: fadeInDown 0.3s ease-out;
+        }
+        
+        /* Pulsante Floating per Preventivi IA - VERSIONE PREMIUM */
+        .floating-chat-btn {
+            position: fixed !important;
+            bottom: 25px !important;
+            right: 25px !important;
+            width: 75px !important;
+            height: 75px !important;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-decoration: none !important;
+            color: white !important;
+            box-shadow: 
+                0 8px 32px rgba(102, 126, 234, 0.3),
+                0 4px 16px rgba(118, 75, 162, 0.2),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3) !important;
+            z-index: 9999 !important;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            overflow: hidden !important;
+            position: relative !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .floating-chat-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+            opacity: 0;
+        }
+        
+        .floating-chat-btn:hover::before {
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
+        }
+        
+        .floating-chat-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+        
+        .floating-chat-btn:hover::after {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .floating-chat-btn:hover {
+            transform: translateY(-8px) scale(1.1) rotate(5deg);
+            box-shadow: 
+                0 16px 48px rgba(102, 126, 234, 0.5),
+                0 8px 24px rgba(118, 75, 162, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.4),
+                0 0 0 8px rgba(102, 126, 234, 0.1);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .floating-chat-btn:active {
+            transform: translateY(-4px) scale(1.05);
+            transition: all 0.1s ease;
+        }
+        
+        .floating-chat-btn i {
+            font-size: 26px;
+            margin-bottom: 3px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+        
+        .floating-chat-btn span {
+            font-size: 9px;
+            line-height: 1;
+            text-align: center;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+        
+        /* Effetto pulsazione per attirare l'attenzione */
+        .floating-chat-btn {
+            animation: pulse-attention 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-attention {
+            0%, 100% { 
+                box-shadow: 
+                    0 8px 32px rgba(102, 126, 234, 0.3),
+                    0 4px 16px rgba(118, 75, 162, 0.2),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+            }
+            50% { 
+                box-shadow: 
+                    0 12px 40px rgba(102, 126, 234, 0.5),
+                    0 6px 20px rgba(118, 75, 162, 0.3),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+                    0 0 0 4px rgba(102, 126, 234, 0.15);
+            }
+        }
+        
+        /* Responsive premium */
+        @media (max-width: 768px) {
+            .floating-chat-btn {
+                width: 65px;
+                height: 65px;
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .floating-chat-btn i {
+                font-size: 22px;
+            }
+            
+            .floating-chat-btn span {
+                font-size: 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .floating-chat-btn {
+                width: 60px;
+                height: 60px;
+                bottom: 15px;
+                right: 15px;
+            }
+            
+            .floating-chat-btn i {
+                font-size: 20px;
+            }
+            
+            .floating-chat-btn span {
+                font-size: 7px;
+            }
+        }
+    </style>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

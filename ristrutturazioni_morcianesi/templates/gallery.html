@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Galleria - Ristrutturazioni Morcianesi{% endblock %}
+{% block meta_description %}Scopri i nostri lavori di ristrutturazione completati con successo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1>I Nostri Lavori</h1>
+        <p>Oltre 20 anni di esperienza in ristrutturazioni di qualità</p>
+    </div>
+</div>
+
+<section class="gallery-section">
+    <div class="container">
+        <div class="gallery-filters">
+            <button class="filter-btn active" data-filter="all">Tutti</button>
+            <button class="filter-btn" data-filter="bagni">Bagni</button>
+            <button class="filter-btn" data-filter="cucine">Cucine</button>
+            <button class="filter-btn" data-filter="completi">Ristrutturazioni Complete</button>
+            <button class="filter-btn" data-filter="esterni">Esterni</button>
+        </div>
+
+        <div class="gallery-grid" id="gallery-grid">
+            <div class="gallery-item" data-category="completi">
+                <img src="{{ url_for('static', filename='images/casavistamareristrutturataconfinestre.png') }}" alt="Casa vista mare ristrutturata" loading="lazy">
+                <div class="gallery-overlay">
+                    <h3>Casa Vista Mare</h3>
+                    <p>Ristrutturazione completa con nuove finestre</p>
+                </div>
+            </div>
+
+            <div class="gallery-item" data-category="completi">
+                <img src="{{ url_for('static', filename='images/ChatGPT Image 22 mag 2025, 17_27_43.png') }}" alt="Ristrutturazione moderna" loading="lazy">
+                <div class="gallery-overlay">
+                    <h3>Ristrutturazione Moderna</h3>
+                    <p>Design contemporaneo con finiture di pregio</p>
+                </div>
+            </div>
+
+            <div class="gallery-item" data-category="bagni">
+                <img src="{{ url_for('static', filename='images/chi_siamo.png') }}" alt="I nostri lavori" loading="lazy">
+                <div class="gallery-overlay">
+                    <h3>Lavori di Qualità</h3>
+                    <p>La nostra esperienza al vostro servizio</p>
+                </div>
+            </div>
+
+            <div class="gallery-item" data-category="completi">
+                <img src="{{ url_for('static', filename='images/casavistamareristrutturataconfinestre.png') }}" alt="Dettaglio ristrutturazione" loading="lazy">
+                <div class="gallery-overlay">
+                    <h3>Dettaglio Costruzione</h3>
+                    <p>Attenzione ai particolari in ogni fase</p>
+                </div>
+            </div>
+
+            <div class="gallery-item" data-category="esterni">
+                <img src="{{ url_for('static', filename='images/casavistamareristrutturataconfinestre.png') }}" alt="Rifacimento facciata" loading="lazy">
+                <div class="gallery-overlay">
+                    <h3>Rifacimento Facciata</h3>
+                    <p>Isolamento termico e nuovi rivestimenti</p>
+                </div>
+            </div>
+
+            <div class="gallery-item" data-category="cucine">
+                <img src="{{ url_for('static', filename='images/chi_siamo.png') }}" alt="La nostra esperienza" loading="lazy">
+                <div class="gallery-overlay">
+                    <h3>I Nostri Progetti</h3>
+                    <p>Esperienza e competenza in ogni lavoro</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="testimonials-section">
+    <div class="container">
+        <h2>Cosa Dicono i Nostri Clienti</h2>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>"Lavoro eccellente, puntualità e professionalità. Hanno trasformato il nostro bagno in un ambiente moderno e funzionale."</p>
+                </div>
+                <div class="testimonial-author">
+                    <strong>Maria R.</strong>
+                    <span>Rifacimento Bagno</span>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>"Ristrutturazione completa del nostro appartamento. Risultato superbo, nei tempi e nel budget concordato."</p>
+                </div>
+                <div class="testimonial-author">
+                    <strong>Paolo e Giulia</strong>
+                    <span>Ristrutturazione Completa</span>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>"Cucina su misura realizzata con grande attenzione ai dettagli. Consigliatissimi!"</p>
+                </div>
+                <div class="testimonial-author">
+                    <strong>Andrea M.</strong>
+                    <span>Rifacimento Cucina</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container">
+        <h2>Inizia il Tuo Progetto</h2>
+        <p>Contattaci per trasformare anche la tua casa</p>
+        <div class="cta-buttons">
+            <a href="{{ url_for('preventivo_form') }}" class="btn btn-primary">Richiedi Preventivo</a>
+            <a href="{{ url_for('home') }}#contatti" class="btn btn-secondary">Contattaci</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='script/gallery.js') }}"></script>
+{% endblock %}

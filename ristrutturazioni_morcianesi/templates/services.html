@@ -1,0 +1,827 @@
+{% extends "base.html" %}
+
+{% block title %}Servizi - Ristrutturazioni Morcianesi{% endblock %}
+{% block meta_description %}Scopri tutti i servizi di ristrutturazione offerti da Ristrutturazioni Morcianesi{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/modules/services.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section with Animated Background -->
+<div class="services-hero">
+    <div class="hero-background">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="title-line">I Nostri</span>
+                <span class="title-line highlight">Servizi</span>
+                <span class="title-line">Professionali</span>
+            </h1>
+            <p class="hero-subtitle">Trasformiamo le tue idee in realtà con oltre 20 anni di esperienza nel settore</p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number" data-target="500">0</span>
+                    <span class="stat-label">Progetti Completati</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" data-target="20">0</span>
+                    <span class="stat-label">Anni di Esperienza</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" data-target="98">0</span>
+                    <span class="stat-label">% Clienti Soddisfatti</span>
+                </div>
+            </div>
+            
+            <!-- Test button for counter animations (remove after testing) -->
+            <button onclick="testCounters()" style="margin-top: 20px; padding: 10px 20px; background: #FFD700; color: #000; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                🔄 Test Counter Animation
+            </button>
+            <button onclick="resetCounters()" style="margin-top: 20px; margin-left: 10px; padding: 10px 20px; background: #FF6B6B; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                ↺ Reset
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Services Grid -->
+<section class="services-showcase">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Cosa Possiamo Fare Per Te</h2>
+            <p class="section-subtitle">Servizi completi di ristrutturazione con la massima qualità e professionalità</p>
+        </div>
+
+        <!-- Servizi Principali Premium -->
+        <div class="services-grid main-services">
+            <div class="service-card premium" data-service="complete">
+                <div class="card-background"></div>
+                <div class="service-icon-wrapper">
+                    <div class="service-icon">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="icon-glow"></div>
+                </div>
+                <h3>🏡 Ristrutturazioni Complete Chiavi in Mano</h3>
+                <p class="service-description">Realizziamo la casa dei tuoi sogni, partendo dalla progettazione fino alla consegna finale. Ogni fase del lavoro è seguita con attenzione ai dettagli, professionalità e materiali di alta qualità.</p>
+                
+                <div class="service-features">
+                    <div class="feature-item">
+                        <i class="fas fa-drafting-compass"></i>
+                        <span>Progettazione tecnica e consulenza: studio degli spazi, pratiche edilizie e direzione lavori</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-hammer"></i>
+                        <span>Demolizioni e ricostruzioni: rimozione delle strutture esistenti e realizzazione di nuovi ambienti</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-bolt"></i>
+                        <span>Nuovi impianti tecnologici: impianti elettrici a norma e impianti idraulici moderni ed efficienti</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-palette"></i>
+                        <span>Finiture di pregio: pavimenti, rivestimenti, pitture e dettagli realizzati con materiali selezionati</span>
+                    </div>
+                </div>
+                
+                <button class="service-cta" onclick="openServiceModal('complete')">
+                    <span>Contattaci per un preventivo personalizzato</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <div class="service-card premium" data-service="bathroom">
+                <div class="card-background"></div>
+                <div class="service-icon-wrapper">
+                    <div class="service-icon">
+                        <i class="fas fa-shower"></i>
+                    </div>
+                    <div class="icon-glow"></div>
+                </div>
+                <h3>🚿 Rifacimento Bagni</h3>
+                <p class="service-description">Trasformiamo il tuo bagno in un ambiente moderno, funzionale e raffinato. Offriamo soluzioni su misura per ogni esigenza, con finiture di alta gamma.</p>
+                
+                <div class="service-features">
+                    <div class="feature-item">
+                        <i class="fas fa-shower"></i>
+                        <span>Box doccia su misura: in vetro temperato, cristallo, o soluzioni walk-in</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-th-large"></i>
+                        <span>Rivestimenti ceramici: ampio catalogo dal classico al moderno, anche in grandi formati</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-tint"></i>
+                        <span>Sanitari di design: sospesi, salvaspazio, con tecnologie per il risparmio idrico</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>Illuminazione LED: integrata in specchi, controsoffitti e mobili</span>
+                    </div>
+                </div>
+                
+                <button class="service-cta" onclick="openServiceModal('bathroom')">
+                    <span>Parla con un nostro esperto</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <div class="service-card premium" data-service="systems">
+                <div class="card-background"></div>
+                <div class="service-icon-wrapper">
+                    <div class="service-icon">
+                        <i class="fas fa-microchip"></i>
+                    </div>
+                    <div class="icon-glow"></div>
+                </div>
+                <h3>⚙️ Impianti Tecnologici</h3>
+                <p class="service-description">Offriamo soluzioni impiantistiche moderne e innovative per garantire il massimo comfort abitativo, l'efficienza energetica e la gestione intelligente della casa. Ogni impianto è progettato su misura, secondo le esigenze del cliente e le caratteristiche dell'abitazione.</p>
+                
+                <div class="service-features">
+                    <div class="feature-item">
+                        <i class="fas fa-thermometer-half"></i>
+                        <span>Climatizzazione: Installazione di sistemi di climatizzazione estiva e invernale: split, multisplit, pompe di calore e canalizzati. Alta efficienza e risparmio energetico garantiti</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-home"></i>
+                        <span>Domotica e automazione: Sistemi integrati per la gestione automatica di luci, tapparelle, impianti di sicurezza, climatizzazione e irrigazione. Massima comodità con controllo da remoto via smartphone o tablet</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-wifi"></i>
+                        <span>Sistemi smart home: Soluzioni intelligenti per trasformare la tua abitazione in una smart home con dispositivi connessi, assistenti vocali, sensori e interfacce user-friendly</span>
+                    </div>
+                </div>
+                
+                <button class="service-cta" onclick="openServiceModal('systems')">
+                    <span>Contattaci per una consulenza</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sezione Lavori Interni -->
+        <div class="services-section">
+            <h3 class="services-section-title">🔨 Lavori Interni</h3>
+            <div class="services-grid secondary-services">
+                <div class="service-card compact" data-service="structural">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-hammer"></i>
+                        </div>
+                    </div>
+                    <h4>🔨 Opere Murarie e Strutturali</h4>
+                    <ul class="service-list">
+                        <li>Demolizione di pareti, infissi, porte e solai, con smaltimento delle macerie incluso</li>
+                        <li>Realizzazione di nuove murature e pareti divisorie</li>
+                        <li>Esecuzione di opere in cemento armato: cerchiature, consolidamenti strutturali, nuovi solai</li>
+                        <li>Installazione di soglie e controtelai</li>
+                        <li>Rifacimento intonaci interni</li>
+                        <li>Assistenza muraria per la posa di impianti elettrici e idraulici</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('structural')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="insulation">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <h4>🛡️ Isolamenti e Impermeabilizzazioni</h4>
+                    <ul class="service-list">
+                        <li>Isolamento termico con pannelli in polistirene (estruso o espanso)</li>
+                        <li>Isolamento acustico con lana di roccia per pareti, soffitti e pavimenti</li>
+                        <li>Impermeabilizzazioni per bagni, piatti doccia e murature contro terra</li>
+                        <li>Realizzazione di barriere e freni al vapore</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('insulation')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="flooring">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-th-large"></i>
+                        </div>
+                    </div>
+                    <h4>🏢 Pavimenti e Rivestimenti</h4>
+                    <ul class="service-list">
+                        <li>Rimozione di pavimenti e sottofondi, con smaltimento materiali</li>
+                        <li>Sottofondi alleggeriti in calcestruzzo cellulare, argilla espansa o polistirolo</li>
+                        <li>Massetti armati o fibrati</li>
+                        <li>Posa di parquet, laminati, ceramica (dal mosaico alle grandi lastre 120x320 cm)</li>
+                        <li>Installazione di gradini, scale e battiscopa</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('flooring')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="drywall">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-cube"></i>
+                        </div>
+                    </div>
+                    <h4>📦 Cartongesso</h4>
+                    <ul class="service-list">
+                        <li>Pareti, contropareti e controsoffitti (lastra singola o doppia)</li>
+                        <li>Volte, velette e compartimentazioni antincendio</li>
+                        <li>Arredi su misura in cartongesso: mensole, librerie, mobili</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('drywall')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="painting">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-paint-brush"></i>
+                        </div>
+                    </div>
+                    <h4>🎨 Tinteggiature e Verniciature Interne</h4>
+                    <ul class="service-list">
+                        <li>Sverniciatura e raschiatura di vecchie pitture</li>
+                        <li>Rasature lisce o effetto intonaco (anche armate)</li>
+                        <li>Trattamenti antimuffa e fungicidi</li>
+                        <li>Pitture all'acqua (tempera, traspirante, lavabile), minerali (calce, silicato) e termiche</li>
+                        <li>Finiture decorative: stucco veneziano, marmorino</li>
+                        <li>Verniciatura su legno (soffitti, persiane, infissi) e ferro (ringhiere, termosifoni)</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('painting')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="doors">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                    </div>
+                    <h4>🚪 Porte e Finestre</h4>
+                    <ul class="service-list">
+                        <li>Installazione di porte interne</li>
+                        <li>Fornitura e posa di infissi in legno, PVC o alluminio</li>
+                        <li>Montaggio di portoni blindati</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('doors')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sezione Lavori Esterni -->
+        <div class="services-section">
+            <h3 class="services-section-title">🏗 Lavori Esterni</h3>
+            <div class="services-grid secondary-services">
+                <div class="service-card compact" data-service="scaffolding">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                    </div>
+                    <h4>🏗️ Ponteggi</h4>
+                    <ul class="service-list">
+                        <li>Noleggio e installazione di ponteggi fissi prefabbricati</li>
+                        <li>Noleggio e montaggio di ponteggi autosollevanti</li>
+                        <li>Fornitura di piattaforme aeree per lavori in quota</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('scaffolding')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="external-masonry">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-hammer"></i>
+                        </div>
+                    </div>
+                    <h4>🏗️ Murature Esterne</h4>
+                    <ul class="service-list">
+                        <li>Demolizione di tetti, balconi, intonaci, pavimentazioni e solai, con smaltimento</li>
+                        <li>Ripristino intonaci con malte fibrate</li>
+                        <li>Recupero strutture in cemento armato con malte R3 e R4 tixotropiche</li>
+                        <li>Scavi, rinterri e nuove fondazioni</li>
+                        <li>Costruzione di parapetti, balconi, rampe, solai e cerchiature</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('external-masonry')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="external-insulation">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <h4>🛡️ Isolamenti e Impermeabilizzazioni Esterne</h4>
+                    <ul class="service-list">
+                        <li>Impermeabilizzazioni con guaine bituminose, cementizie, in polietilene e resine liquide</li>
+                        <li>Barriere contro umidità per murature interrate</li>
+                        <li>Realizzazione di freni e barriere al vapore</li>
+                        <li>Cappotti termici con EPS, lana di roccia, sughero o fibra di legno</li>
+                        <li>Coibentazioni coperture con XPS, poliuretano, lana di roccia, sughero o fibra di legno</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('external-insulation')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="external-flooring">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-road"></i>
+                        </div>
+                    </div>
+                    <h4>🏢 Pavimentazioni Esterne e Coprimuro</h4>
+                    <ul class="service-list">
+                        <li>Demolizione e rifacimento di pavimenti e sottofondi</li>
+                        <li>Solette armate, marciapiedi, massetti</li>
+                        <li>Posa di ceramiche, porfido, autobloccanti e pavimenti flottanti</li>
+                        <li>Coprimuri in marmo o marmoresina</li>
+                        <li>Posa di scale, gradini e battiscopa</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('external-flooring')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="roofing">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                    </div>
+                    <h4>🏠 Coperture e Tetti</h4>
+                    <ul class="service-list">
+                        <li>Coperture con tegole in laterizio o cemento</li>
+                        <li>Pannelli sandwich in lamiera coibentata</li>
+                        <li>Montaggio di lucernai e finestre da tetto</li>
+                        <li>Costruzione di camini</li>
+                        <li>Progettazione e installazione di linea vita</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('roofing')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="external-painting">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-paint-brush"></i>
+                        </div>
+                    </div>
+                    <h4>🎨 Tinteggiature e Verniciature Esterne</h4>
+                    <ul class="service-list">
+                        <li>Sverniciatura e lavaggi ad alta pressione</li>
+                        <li>Rasature effetto intonaco (anche armate)</li>
+                        <li>Trattamenti antimuffa e fungicidi</li>
+                        <li>Pitture esterne acriliche, silossaniche, minerali e termiche</li>
+                        <li>Verniciature su ferro: ringhiere, infissi, tubazioni</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('external-painting')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="service-card compact" data-service="fibrocemento">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon">
+                            <i class="fas fa-shapes"></i>
+                        </div>
+                    </div>
+                    <h4>🏗️ Fibrocemento e Polistirene</h4>
+                    <ul class="service-list">
+                        <li>Cornici, modanature e marcapiani in polistirene EPS</li>
+                        <li>Elementi architettonici in fibrocemento: cassonetti, parapetti, controsoffitti</li>
+                    </ul>
+                    <button class="service-cta compact" onclick="openServiceModal('fibrocemento')">
+                        <span>Dettagli</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Process Timeline Section -->
+<section class="process-timeline">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Il Nostro Processo</h2>
+            <p class="section-subtitle">Come lavoriamo per garantire il massimo risultato</p>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-item" data-step="1">
+                <div class="timeline-marker">
+                    <div class="marker-inner">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                </div>
+                <div class="timeline-content">
+                    <h3>Consulenza Iniziale</h3>
+                    <p>Incontro conoscitivo per comprendere le tue esigenze e valutare il progetto</p>
+                    <span class="timeline-duration">Gratuita</span>
+                </div>
+            </div>
+
+            <div class="timeline-item" data-step="2">
+                <div class="timeline-marker">
+                    <div class="marker-inner">
+                        <i class="fas fa-drafting-compass"></i>
+                    </div>
+                </div>
+                <div class="timeline-content">
+                    <h3>Progettazione</h3>
+                    <p>Elaborazione del progetto con rendering 3D e scelta dei materiali</p>
+                    <span class="timeline-duration">7-14 giorni</span>
+                </div>
+            </div>
+
+            <div class="timeline-item" data-step="3">
+                <div class="timeline-marker">
+                    <div class="marker-inner">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                </div>
+                <div class="timeline-content">
+                    <h3>Preventivo Dettagliato</h3>
+                    <p>Preventivo completo con cronoprogramma dei lavori e garanzie</p>
+                    <span class="timeline-duration">2-3 giorni</span>
+                </div>
+            </div>
+
+            <div class="timeline-item" data-step="4">
+                <div class="timeline-marker">
+                    <div class="marker-inner">
+                        <i class="fas fa-hard-hat"></i>
+                    </div>
+                </div>
+                <div class="timeline-content">
+                    <h3>Realizzazione</h3>
+                    <p>Esecuzione dei lavori con aggiornamenti costanti e supervisione tecnica</p>
+                    <span class="timeline-duration">Variabile</span>
+                </div>
+            </div>
+
+            <div class="timeline-item" data-step="5">
+                <div class="timeline-marker">
+                    <div class="marker-inner">
+                        <i class="fas fa-key"></i>
+                    </div>
+                </div>
+                <div class="timeline-content">
+                    <h3>Consegna</h3>
+                    <p>Controllo finale, pulizie e consegna chiavi in mano con garanzia</p>
+                    <span class="timeline-duration">1 giorno</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Why Choose Us Section -->
+<section class="why-choose-us">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Perché Scegliere Noi</h2>
+            <p class="section-subtitle">I vantaggi che ci distinguono dalla concorrenza</p>
+        </div>
+
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-award"></i>
+                </div>
+                <h3>Qualità Garantita</h3>
+                <p>Materiali di prima scelta e lavorazioni certificate con garanzia estesa</p>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3>Tempi Rispettati</h3>
+                <p>Consegna puntuale secondo il cronoprogramma concordato</p>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-euro-sign"></i>
+                </div>
+                <h3>Prezzi Trasparenti</h3>
+                <p>Preventivi dettagliati senza costi nascosti o sorprese</p>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Team Esperto</h3>
+                <p>Professionisti qualificati con oltre 20 anni di esperienza</p>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-phone-alt"></i>
+                </div>
+                <h3>Assistenza H24</h3>
+                <p>Supporto continuo durante e dopo i lavori per ogni necessità</p>
+            </div>
+
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <h3>Eco-Sostenibile</h3>
+                <p>Attenzione all'ambiente con materiali green e tecniche innovative</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Section -->
+<section class="services-cta">
+    <div class="cta-background">
+        <div class="cta-overlay"></div>
+    </div>
+    <div class="container">
+        <div class="cta-content">
+            <h2>Pronto a Iniziare il Tuo Progetto?</h2>
+            <p>Trasforma la tua casa con i nostri servizi professionali. Contattaci oggi per un preventivo gratuito!</p>
+            <div class="cta-buttons">
+                <a href="{{ url_for('preventivo_form') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-calculator"></i>
+                    <span>Preventivo Gratuito</span>
+                </a>
+                <a href="{{ url_for('contact') }}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-phone"></i>
+                    <span>Chiamaci Ora</span>
+                </a>
+            </div>
+            <div class="cta-contact-info">
+                <div class="contact-item">
+                    <i class="fas fa-phone"></i>
+                    <span>+39 338 123 4567</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>info@ristrutturazionimorcianesi.it</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Service Modal -->
+<div class="service-modal" id="serviceModal">
+    <div class="modal-overlay" onclick="closeServiceModal()"></div>
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeServiceModal()">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="modal-header">
+            <h2 id="modalTitle">Titolo Servizio</h2>
+        </div>
+        <div class="modal-body">
+            <div class="modal-gallery">
+                <div class="gallery-main">
+                    <img id="modalMainImage" src="" alt="" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                </div>
+                <div class="gallery-thumbnails">
+                    <!-- Thumbnails will be populated dynamically -->
+                </div>
+            </div>
+            <div class="modal-content-text">
+                <p id="modalDescription">Descrizione del servizio...</p>
+                <div class="modal-features">
+                    <h3>Caratteristiche:</h3>
+                    <ul id="modalFeatures">
+                        <!-- Features will be populated dynamically -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='script/services.js') }}"></script>
+<script>
+console.log('📋 Services page inline script loaded');
+
+// Simple, reliable counter animation
+function animateCounters() {
+    console.log('🎯 Starting counter animations...');
+    
+    const counters = document.querySelectorAll('.stat-number[data-target]');
+    console.log(`Found ${counters.length} counter elements`);
+    
+    counters.forEach((counter, index) => {
+        const target = parseInt(counter.getAttribute('data-target'));
+        console.log(`Counter ${index}: target = ${target}`);
+        
+        if (!target) return;
+        
+        // Reset counter
+        counter.textContent = '0';
+        
+        // Animation parameters
+        let startTime = null;
+        const duration = 2000;
+        
+        function animate(currentTime) {
+            if (!startTime) startTime = currentTime;
+            const progress = Math.min((currentTime - startTime) / duration, 1);
+            
+            // Easing function
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(target * easeProgress);
+            
+            counter.textContent = current;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                counter.textContent = target;
+                console.log(`✅ Counter ${index} animation complete: ${target}`);
+            }
+        }
+        
+        // Start animation with staggered delay
+        setTimeout(() => {
+            requestAnimationFrame(animate);
+        }, index * 300);
+    });
+}
+
+// Global functions for test buttons
+window.testCounters = function() {
+    console.log('🧪 Test button clicked');
+    
+    // Reset all counters first
+    document.querySelectorAll('.stat-number').forEach(counter => {
+        counter.textContent = '0';
+    });
+    
+    // Start animation with 6 second delay - molto più tardi
+    setTimeout(animateCounters, 6000);
+};
+
+window.resetCounters = function() {
+    console.log('🔄 Reset button clicked');
+    document.querySelectorAll('.stat-number').forEach(counter => {
+        counter.textContent = '0';
+    });
+};
+
+// Global modal function
+window.openServiceModal = function(serviceId) {
+    console.log('🔘 Opening modal for service:', serviceId);
+    
+    // Try to use the ServicesController if available
+    if (window.servicesController && typeof window.servicesController.openServiceModal === 'function') {
+        console.log('✅ Using ServicesController to open modal');
+        window.servicesController.openServiceModal(serviceId);
+    } else {
+        console.warn('⚠️ ServicesController not available, using fallback modal');
+        openServiceModalFallback(serviceId);
+    }
+};
+
+// Fallback modal function with basic service data
+function openServiceModalFallback(serviceId) {
+    const serviceData = {
+        complete: {
+            title: "Ristrutturazione Completa",
+            description: "Dalla progettazione alla consegna chiavi in mano. Trasformiamo completamente i tuoi spazi con un servizio completo e professionale.",
+            features: ["Progettazione 3D personalizzata", "Gestione completa del cantiere", "Materiali di alta qualità", "Consegna chiavi in mano", "Garanzia post-lavoro"]
+        },
+        bathroom: {
+            title: "Rifacimento Bagni",
+            description: "Bagni moderni e funzionali con materiali di qualità superiore e design contemporaneo.",
+            features: ["Box doccia su misura", "Rivestimenti ceramici", "Sanitari di design", "Illuminazione LED"]
+        },
+        structural: {
+            title: "Opere Strutturali",
+            description: "Interventi strutturali e modifiche murarie eseguiti da tecnici specializzati.",
+            features: ["Analisi strutturale completa", "Demolizioni controllate", "Rinforzi strutturali", "Certificazioni tecniche"]
+        },
+        systems: {
+            title: "Impianti Tecnologici",
+            description: "Impianti moderni e tecnologici per il massimo comfort abitativo e l'efficienza energetica.",
+            features: ["Impianti elettrici certificati", "Sistemi di riscaldamento", "Domotica e automazione", "Efficienza energetica"]
+        },
+        painting: {
+            title: "Tinteggiature",
+            description: "Tinteggiature professionali con materiali eco-sostenibili per dare nuova vita ai tuoi ambienti.",
+            features: ["Pitture eco-sostenibili", "Tecniche decorative", "Preparazione superfici", "Colori personalizzati"]
+        }
+    };
+    
+    const service = serviceData[serviceId];
+    if (!service) {
+        console.error('❌ Servizio non trovato:', serviceId);
+        return;
+    }
+    
+    const modal = document.getElementById('serviceModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDescription = document.getElementById('modalDescription');
+    const modalFeatures = document.getElementById('modalFeatures');
+    
+    if (!modal) {
+        console.error('❌ Modal element not found');
+        return;
+    }
+    
+    // Popola contenuti
+    if (modalTitle) modalTitle.textContent = service.title;
+    if (modalDescription) modalDescription.textContent = service.description;
+    
+    // Popola features
+    if (modalFeatures) {
+        modalFeatures.innerHTML = '';
+        service.features.forEach(feature => {
+            const li = document.createElement('li');
+            li.textContent = feature;
+            modalFeatures.appendChild(li);
+        });
+    }
+    
+    // Mostra modal
+    modal.style.display = 'block';
+    modal.classList.add('active');
+    
+    console.log('✅ Modal aperto con successo:', service.title);
+}
+
+// Global function to close service modal  
+window.closeServiceModal = function() {
+    console.log('🔘 Closing service modal');
+    const modal = document.getElementById('serviceModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+        
+        // Remove any body scroll lock if present
+        document.body.style.overflow = '';
+        
+        console.log('✅ Modal closed successfully');
+    } else {
+        console.warn('⚠️ Service modal not found');
+    }
+};
+
+// Auto-start counter animation
+function startCountersWhenReady() {
+    const counters = document.querySelectorAll('.stat-number[data-target]');
+    if (counters.length > 0) {
+        console.log('🚀 Auto-starting counter animations in 6 seconds...');
+        setTimeout(animateCounters, 6000); // Ritardo di 6 secondi - molto più tardi
+    } else {
+        console.log('⏳ Counters not found yet, retrying...');
+        setTimeout(startCountersWhenReady, 100);
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', startCountersWhenReady);
+
+// Also try if DOM is already loaded
+if (document.readyState !== 'loading') {
+    setTimeout(startCountersWhenReady, 100);
+}
+</script>
+{% endblock %}

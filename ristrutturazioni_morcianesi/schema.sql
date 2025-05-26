@@ -11,15 +11,20 @@ DROP TABLE IF EXISTS preventivi;
 -- Tabella utenti per autenticazione e gestione account
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
+    nome TEXT NOT NULL,
+    cognome TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
     is_verified INTEGER DEFAULT 0,
     verification_token TEXT,
     token_created_at TEXT,
     reset_token TEXT,
     reset_token_created_at TEXT,
-    role TEXT DEFAULT 'user'
+    role TEXT DEFAULT 'user',
+    oauth_provider TEXT,
+    oauth_id TEXT,
+    avatar_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabella per preventivi generati
@@ -100,11 +105,13 @@ CREATE TABLE IF NOT EXISTS preventivi (
     email TEXT NOT NULL,
     telefono TEXT NOT NULL,
     tipo_lavoro TEXT NOT NULL,
+    tipologia TEXT,
     descrizione TEXT,
     indirizzo TEXT,
     metratura TEXT,
+    foto_paths TEXT,
     data_richiesta DATETIME DEFAULT CURRENT_TIMESTAMP,
-    stato TEXT DEFAULT 'in attesa', -- Nuovi stati: 'in attesa', 'in elaborazione', 'completato', 'rifiutato'
+    stato TEXT DEFAULT 'Nuovo', -- Stati: 'Nuovo', 'In lavorazione', 'Completato'
     risposta TEXT,
     data_risposta DATETIME,
     FOREIGN KEY (user_id) REFERENCES users(id)

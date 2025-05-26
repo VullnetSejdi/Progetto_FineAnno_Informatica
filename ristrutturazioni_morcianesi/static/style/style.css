@@ -7,6 +7,9 @@
 @import "modules/buttons.css";  /* Pulsanti e CTA */
 @import "modules/sections.css";  /* Sezioni principali */
 @import "modules/about.css";  /* Sezione Chi Siamo */
+@import "modules/gallery.css";  /* Galleria progetti */
+@import "modules/services.css";  /* Pagina servizi */
+@import "modules/contact.css";  /* Pagina contatti */
 @import "modules/footer.css";  /* Footer e contatti */
 @import "modules/responsive.css";  /* Media queries */
 @import "modules/style_chat.css";  /* chat gpt */

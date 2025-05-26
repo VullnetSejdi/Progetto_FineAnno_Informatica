@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+.admin-panel {
+    padding: 100px 0 80px;
+    min-height: 100vh;
+    background: var(--bg-light);
+}
+
+.admin-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.admin-header h1 {
+    color: var(--primary);
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.messages-table {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.table-header {
+    background: var(--primary);
+    color: white;
+    padding: 20px;
+}
+
+.table-header h3 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.message-item {
+    border-bottom: 1px solid #eee;
+    padding: 20px;
+    transition: background 0.3s ease;
+}
+
+.message-item:hover {
+    background: #f8f9fa;
+}
+
+.message-item:last-child {
+    border-bottom: none;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.message-info {
+    flex: 1;
+}
+
+.message-name {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 1.1rem;
+}
+
+.message-email {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.message-date {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.message-status {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-nuovo {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-risposto {
+    background: #d4edda;
+    color: #155724;
+}
+
+.message-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.message-text {
+    color: var(--text-dark);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.message-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin: 15px 0;
+    font-size: 0.9rem;
+}
+
+.detail-item {
+    color: var(--text-light);
+}
+
+.detail-label {
+    font-weight: 600;
+}
+
+.response-form {
+    margin-top: 15px;
+    padding: 15px;
+    background: #e3f2fd;
+    border-radius: 8px;
+}
+
+.response-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    resize: vertical;
+    min-height: 80px;
+    margin-bottom: 10px;
+}
+
+.response-form button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease;
+}
+
+.response-form button:hover {
+    background: var(--secondary);
+}
+
+.existing-response {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.no-messages {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-light);
+}
+
+.no-messages i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .message-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .message-details {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-panel">
+    <div class="container">
+        <div class="admin-header">
+            <h1>📧 Messaggi di Contatto</h1>
+            <p>Gestisci i messaggi ricevuti dal modulo di contatto</p>
+        </div>
+
+        <div class="messages-table">
+            <div class="table-header">
+                <h3>Messaggi Ricevuti ({{ messages|length }})</h3>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                <div class="message-item">
+                    <div class="message-header">
+                        <div class="message-info">
+                            <div class="message-name">{{ message.nome }}</div>
+                            <div class="message-email">{{ message.email }}</div>
+                        </div>
+                        <div>
+                            <div class="message-date">{{ message.data_invio.strftime('%d/%m/%Y %H:%M') if message.data_invio else 'N/A' }}</div>
+                            <span class="message-status status-{{ message.stato }}">{{ message.stato }}</span>
+                        </div>
+                    </div>
+
+                    <div class="message-details">
+                        {% if message.telefono %}
+                        <div class="detail-item">
+                            <span class="detail-label">Telefono:</span> {{ message.telefono }}
+                        </div>
+                        {% endif %}
+                        {% if message.servizio %}
+                        <div class="detail-item">
+                            <span class="detail-label">Servizio:</span> {{ message.servizio }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="message-content">
+                        <p class="message-text">{{ message.messaggio }}</p>
+                    </div>
+
+                    {% if message.risposta %}
+                    <div class="existing-response">
+                        <strong>Risposta inviata il {{ message.data_risposta.strftime('%d/%m/%Y %H:%M') if message.data_risposta else 'N/A' }}:</strong><br>
+                        {{ message.risposta }}
+                    </div>
+                    {% else %}
+                    <form class="response-form" method="POST" action="{{ url_for('admin_respond_contact', message_id=message.id) }}">
+                        <textarea name="risposta" placeholder="Scrivi la risposta al cliente..." required></textarea>
+                        <button type="submit">Invia Risposta</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="no-messages">
+                <i>📭</i>
+                <h3>Nessun messaggio</h3>
+                <p>Non ci sono ancora messaggi di contatto da visualizzare.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

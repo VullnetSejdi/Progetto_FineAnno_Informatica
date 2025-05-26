@@ -219,14 +219,56 @@
         color: #666;
         font-size: 1.2rem;
     }
+    
+    .alert {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 5px;
+        font-weight: 600;
+    }
+    
+    .alert-success {
+        background-color: #e8f5e9;
+        color: #388e3c;
+        border: 1px solid #81c784;
+    }
+    
+    .alert-error, .alert-danger {
+        background-color: #ffebee;
+        color: #d32f2f;
+        border: 1px solid #ef5350;
+    }
+    
+    .alert-warning {
+        background-color: #fff8e1;
+        color: #ffa000;
+        border: 1px solid #ffd54f;
+    }
+    
+    .alert-info {
+        background-color: #e3f2fd;
+        color: #1976d2;
+        border: 1px solid #64b5f6;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="preventivi-container">
     <h1>Gestione Preventivi</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
     <p>Qui puoi visualizzare e rispondere ai preventivi richiesti dai clienti.</p>
-
+    
     <div class="tabs">
         <div class="tab active" data-filter="all">Tutti</div>
         <div class="tab" data-filter="Nuovo">Nuovi</div>
@@ -257,9 +299,9 @@
             </div>
 
             {% if preventivo.foto_paths %}
-            <div class="preventivo-foto">
+            <div class="preventivo-foto" data-preventivo-id="{{ preventivo.id }}">
                 {% for foto in preventivo.foto_paths %}
-                <img src="{{ url_for('static', filename=foto) }}" alt="Foto del progetto" onclick="apriModaleFoto('{{ url_for('static', filename=foto) }}', {{ loop.index0 }}, {{ preventivo.id }})">
+                <img src="{{ url_for('static', filename=foto) }}" alt="Foto del progetto" class="foto-clickable" data-foto-src="{{ url_for('static', filename=foto) }}" data-index="{{ loop.index0 }}" data-preventivo-id="{{ preventivo.id }}">
                 {% endfor %}
             </div>
             {% endif %}
@@ -337,10 +379,13 @@
     let currentFotoIndex = 0;
     let fotoArray = [];
 
-    // Funzione per aprire la modale delle foto
-    function apriModaleFoto(src, index, preventivoId) {
+    // Funzione per aprire la modale delle foto con event delegation
+    function apriModaleFoto(img) {
         const modal = document.getElementById('modal-foto');
         const modalImg = document.getElementById('modal-img');
+        const src = img.dataset.fotoSrc;
+        const index = parseInt(img.dataset.index);
+        const preventivoId = parseInt(img.dataset.preventivoId);
         
         modal.style.display = 'block';
         modalImg.src = src;
@@ -351,8 +396,8 @@
             fotoArray = [];
             
             // Raccogli tutte le foto del preventivo corrente
-            document.querySelectorAll(`.preventivo-card[data-id="${preventivoId}"] .preventivo-foto img`).forEach(img => {
-                fotoArray.push(img.src);
+            document.querySelectorAll(`[data-preventivo-id="${preventivoId}"] img[data-foto-src]`).forEach(imgEl => {
+                fotoArray.push(imgEl.dataset.fotoSrc);
             });
         }
         
@@ -377,6 +422,15 @@
         
         document.getElementById('modal-img').src = fotoArray[currentFotoIndex];
     }
+
+    // Event delegation per le foto
+    document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('foto-clickable')) {
+                apriModaleFoto(event.target);
+            }
+        });
+    });
 
     // Chiudi la modale quando si clicca fuori dall'immagine
     window.onclick = function(event) {
